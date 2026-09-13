@@ -1,12 +1,14 @@
+import { Navbar } from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
 
   return (
-    <div className="min-h-screen bg-bg px-6 py-12 text-ink">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="font-serif text-3xl font-medium">My Afterglows</h1>
+    <div className="min-h-screen bg-bg">
+      <Navbar />
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <h1 className="font-serif text-3xl font-medium text-ink">My Afterglows</h1>
         <p className="mt-2 text-ink-soft">Signed in as {user?.email}</p>
         <button
           type="button"
