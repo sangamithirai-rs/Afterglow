@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 export function CreateExperiencePage() {
   const { user } = useAuth()
@@ -12,8 +15,37 @@ export function CreateExperiencePage() {
   const [location, setLocation] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [description, setDescription] = useState('')
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Clean up the temporary preview URL when it's replaced or the component unmounts,
+  // otherwise the browser keeps that blob in memory unnecessarily.
+  useEffect(() => {
+    return () => {
+      if (coverPreview) URL.revokeObjectURL(coverPreview)
+    }
+  }, [coverPreview])
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError('Please upload a JPEG, PNG, or WebP image.')
+      return
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError('Image must be smaller than 5MB.')
+      return
+    }
+
+    setError(null)
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
 
   async function handleSaveDraft(e: FormEvent) {
     e.preventDefault()
@@ -31,12 +63,36 @@ export function CreateExperiencePage() {
 
     setSaving(true)
 
+    let coverImageUrl: string | null = null
+
+    if (coverFile) {
+      const fileExt = coverFile.name.split('.').pop()
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('experience-images')
+        .upload(filePath, coverFile)
+
+      if (uploadError) {
+        setError(`Image upload failed: ${uploadError.message}`)
+        setSaving(false)
+        return
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('experience-images')
+        .getPublicUrl(filePath)
+
+      coverImageUrl = publicUrlData.publicUrl
+    }
+
     const { error: insertError } = await supabase.from('experiences').insert({
       user_id: user.id,
       title: title.trim(),
       location: location.trim() || null,
       event_date: eventDate || null,
       description: description.trim() || null,
+      cover_image_url: coverImageUrl,
       status: 'draft',
     })
 
@@ -62,6 +118,25 @@ export function CreateExperiencePage() {
         </p>
 
         <form onSubmit={handleSaveDraft} className="mt-8 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-ink">Cover image</label>
+            <div className="mt-1 flex items-center gap-4">
+              <div className="flex h-24 w-36 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface">
+                {coverPreview ? (
+                  <img src={coverPreview} alt="Cover preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-xs text-ink-soft">No image</span>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="text-sm text-ink-soft file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-accent-soft"
+              />
+            </div>
+          </div>
+
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-ink">
               Title
@@ -117,9 +192,7 @@ export function CreateExperiencePage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
             type="submit"
