@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { LandingPage } from './pages/LandingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CreateExperiencePage } from './pages/CreateExperiencePage'
+import { EditExperiencePage } from './pages/EditExperiencePage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 
 function App() {
@@ -22,6 +23,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateExperiencePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/experiences/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditExperiencePage />
             </ProtectedRoute>
           }
         />
