@@ -4,6 +4,10 @@ import { Navbar } from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 import { useExperience } from '../hooks/useExperience'
 import { supabase } from '../lib/supabase'
+import { PhotoGallerySection } from '../components/experience/PhotoGallerySection'
+import { SongsSection } from '../components/experience/SongsSection'
+import { TimelineSection } from '../components/experience/TimelineSection'
+import { PeopleSection } from '../components/experience/PeopleSection'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -295,7 +299,14 @@ export function EditExperiencePage() {
               Delete
             </button>
           </div>
-        </form>
+               </form>
+
+        <div className="mt-14 space-y-12 border-t border-border pt-10">
+          <PhotoGallerySection experienceId={experience.id} />
+          <SongsSection experienceId={experience.id} />
+          <TimelineSection experienceId={experience.id} />
+          <PeopleSection experienceId={experience.id} />
+        </div>
       </div>
     </div>
   )
