@@ -83,7 +83,7 @@ export function PhotoGallerySection({ experienceId }: { experienceId: string }) 
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading photos...</p>
       ) : (
-        <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((photo) => (
             <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
               <img src={photo.storage_path} alt={photo.caption ?? ''} className="h-full w-full object-cover" />

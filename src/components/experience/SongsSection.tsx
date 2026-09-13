@@ -35,7 +35,7 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
       <h2 className="font-serif text-xl font-medium text-ink">Songs</h2>
       <p className="mt-1 text-sm text-ink-soft">The soundtrack of this experience.</p>
 
-      <form onSubmit={handleAdd} className="mt-3 flex flex-wrap gap-2">
+      <form onSubmit={handleAdd} className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           value={title}
