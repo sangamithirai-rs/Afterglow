@@ -8,6 +8,7 @@ import { PhotoGallerySection } from '../components/experience/PhotoGallerySectio
 import { SongsSection } from '../components/experience/SongsSection'
 import { TimelineSection } from '../components/experience/TimelineSection'
 import { PeopleSection } from '../components/experience/PeopleSection'
+import { InviteSection } from '../components/experience/InviteSection'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -31,8 +32,9 @@ export function EditExperiencePage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [visibility, setVisibility] = useState<'private' | 'invite_only'>('private')
 
-  // Populate form fields once the experience loads
+    // Populate form fields once the experience loads
   useEffect(() => {
     if (!experience) return
     setTitle(experience.title)
@@ -40,6 +42,7 @@ export function EditExperiencePage() {
     setEventDate(experience.event_date ?? '')
     setDescription(experience.description ?? '')
     setCoverImageUrl(experience.cover_image_url)
+    setVisibility(experience.visibility as 'private' | 'invite_only')
   }, [experience])
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export function EditExperiencePage() {
     try {
       const finalCoverUrl = await uploadNewCoverIfNeeded()
 
-      const { error: updateError } = await supabase
+            const { error: updateError } = await supabase
         .from('experiences')
         .update({
           title: title.trim(),
@@ -106,6 +109,7 @@ export function EditExperiencePage() {
           event_date: eventDate || null,
           description: description.trim() || null,
           cover_image_url: finalCoverUrl,
+          visibility,
         })
         .eq('id', id)
 
@@ -120,31 +124,43 @@ export function EditExperiencePage() {
   }
 
   async function handleTogglePublish() {
-    if (!experience || !id) return
-    setError(null)
-    setSaving(true)
+  if (!experience || !id) return
+  setError(null)
+  setSaving(true)
 
-    const willPublish = experience.status !== 'published'
-    const slug = experience.share_slug ?? generateSlug()
+  const willPublish = experience.status !== 'published'
+  const slug = experience.share_slug ?? generateSlug()
 
-    const { error: publishError } = await supabase
-      .from('experiences')
-      .update({
-        status: willPublish ? 'published' : 'draft',
-        is_public: willPublish,
-        share_slug: slug,
-      })
-      .eq('id', id)
+  const { error: publishError } = await supabase
+    .from('experiences')
+    .update({
+      status: willPublish ? 'published' : 'draft',
+      share_slug: slug,
+    })
+    .eq('id', id)
 
-    setSaving(false)
+  setSaving(false)
 
-    if (publishError) {
-      setError(publishError.message)
-      return
-    }
-
-    navigate('/dashboard')
+  if (publishError) {
+    setError(publishError.message)
+    return
   }
+
+  navigate('/dashboard')
+}
+async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') {
+  if (!id) return
+  setVisibility(newVisibility)
+
+  const { error: visibilityError } = await supabase
+    .from('experiences')
+    .update({ visibility: newVisibility })
+    .eq('id', id)
+
+  if (visibilityError) {
+    setError(visibilityError.message)
+  }
+}
 
   async function handleDelete() {
     if (!id) return
@@ -259,7 +275,7 @@ export function EditExperiencePage() {
             />
           </div>
 
-          <div>
+                    <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink">Description</label>
             <textarea
               id="description"
@@ -268,6 +284,23 @@ export function EditExperiencePage() {
               rows={4}
               className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label htmlFor="visibility" className="block text-sm font-medium text-ink">
+              Who can see this once published
+            </label>
+           <select
+  id="visibility"
+  value={visibility}
+  onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'invite_only')}
+  className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
+>
+              <option value="private">Only me</option>
+              <option value="invite_only">Only people I invite</option>
+            </select>
+
+            {visibility === 'invite_only' && <InviteSection experienceId={experience.id} />}
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}

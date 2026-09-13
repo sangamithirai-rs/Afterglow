@@ -20,8 +20,6 @@ export function CreateExperiencePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Clean up the temporary preview URL when it's replaced or the component unmounts,
-  // otherwise the browser keeps that blob in memory unnecessarily.
   useEffect(() => {
     return () => {
       if (coverPreview) URL.revokeObjectURL(coverPreview)
@@ -86,24 +84,28 @@ export function CreateExperiencePage() {
       coverImageUrl = publicUrlData.publicUrl
     }
 
-    const { error: insertError } = await supabase.from('experiences').insert({
-      user_id: user.id,
-      title: title.trim(),
-      location: location.trim() || null,
-      event_date: eventDate || null,
-      description: description.trim() || null,
-      cover_image_url: coverImageUrl,
-      status: 'draft',
-    })
+    const { data: inserted, error: insertError } = await supabase
+      .from('experiences')
+      .insert({
+        user_id: user.id,
+        title: title.trim(),
+        location: location.trim() || null,
+        event_date: eventDate || null,
+        description: description.trim() || null,
+        cover_image_url: coverImageUrl,
+        status: 'draft',
+      })
+      .select()
+      .single()
 
     setSaving(false)
 
-    if (insertError) {
-      setError(insertError.message)
+    if (insertError || !inserted) {
+      setError(insertError?.message ?? 'Something went wrong.')
       return
     }
 
-    navigate('/dashboard')
+    navigate(`/experiences/${inserted.id}/edit`)
   }
 
   return (
