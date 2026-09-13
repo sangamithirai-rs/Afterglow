@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { LandingPage } from './pages/LandingPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { CreateExperiencePage } from './pages/CreateExperiencePage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 
 function App() {
@@ -13,6 +14,14 @@ function App() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/experiences/new"
+          element={
+            <ProtectedRoute>
+              <CreateExperiencePage />
             </ProtectedRoute>
           }
         />
