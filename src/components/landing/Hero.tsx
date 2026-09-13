@@ -1,4 +1,8 @@
+import { useAuth } from '../../contexts/AuthContext'
+
 export function Hero() {
+  const { signInWithGoogle } = useAuth()
+
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-16 text-center md:pb-32 md:pt-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] bg-[radial-gradient(circle_at_top,var(--accent-soft)_0%,transparent_60%)] opacity-20" />
@@ -15,6 +19,7 @@ export function Hero() {
       <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
         <button
           type="button"
+          onClick={signInWithGoogle}
           className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
         >
           Sign in with Google

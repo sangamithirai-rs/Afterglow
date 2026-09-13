@@ -1,6 +1,9 @@
 import { ThemeToggle } from './ThemeToggle'
+import { useAuth } from '../../contexts/AuthContext'
 
 export function Navbar() {
+  const { signInWithGoogle } = useAuth()
+
   return (
     <nav className="flex items-center justify-between px-6 py-5 md:px-12">
       <span className="font-serif text-2xl font-medium text-ink">
@@ -13,6 +16,7 @@ export function Navbar() {
         <ThemeToggle />
         <button
           type="button"
+          onClick={signInWithGoogle}
           className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft"
         >
           Sign in with Google
