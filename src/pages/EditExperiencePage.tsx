@@ -34,7 +34,6 @@ export function EditExperiencePage() {
   const [error, setError] = useState<string | null>(null)
   const [visibility, setVisibility] = useState<'private' | 'invite_only'>('private')
 
-    // Populate form fields once the experience loads
   useEffect(() => {
     if (!experience) return
     setTitle(experience.title)
@@ -69,18 +68,18 @@ export function EditExperiencePage() {
     setCoverPreview(URL.createObjectURL(file))
   }
 
-  async function uploadNewCoverIfNeeded(): Promise<string | null> {
+  async function uploadNewCoverIfNeeded() {
     if (!coverFile || !user) return coverImageUrl
 
     const fileExt = coverFile.name.split('.').pop()
-    const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`
+    const filePath = user.id + '/' + crypto.randomUUID() + '.' + fileExt
 
     const { error: uploadError } = await supabase.storage
       .from('experience-images')
       .upload(filePath, coverFile)
 
     if (uploadError) {
-      throw new Error(`Image upload failed: ${uploadError.message}`)
+      throw new Error('Image upload failed: ' + uploadError.message)
     }
 
     const { data } = supabase.storage.from('experience-images').getPublicUrl(filePath)
@@ -101,7 +100,7 @@ export function EditExperiencePage() {
     try {
       const finalCoverUrl = await uploadNewCoverIfNeeded()
 
-            const { error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('experiences')
         .update({
           title: title.trim(),
@@ -109,7 +108,7 @@ export function EditExperiencePage() {
           event_date: eventDate || null,
           description: description.trim() || null,
           cover_image_url: finalCoverUrl,
-          visibility,
+          visibility: visibility,
         })
         .eq('id', id)
 
@@ -123,44 +122,45 @@ export function EditExperiencePage() {
     }
   }
 
+  async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') {
+    if (!id) return
+    setVisibility(newVisibility)
+
+    const { error: visibilityError } = await supabase
+      .from('experiences')
+      .update({ visibility: newVisibility })
+      .eq('id', id)
+
+    if (visibilityError) {
+      setError(visibilityError.message)
+    }
+  }
+
   async function handleTogglePublish() {
-  if (!experience || !id) return
-  setError(null)
-  setSaving(true)
+    if (!experience || !id) return
+    setError(null)
+    setSaving(true)
 
-  const willPublish = experience.status !== 'published'
-  const slug = experience.share_slug ?? generateSlug()
+    const willPublish = experience.status !== 'published'
+    const slug = experience.share_slug ?? generateSlug()
 
-  const { error: publishError } = await supabase
-    .from('experiences')
-    .update({
-      status: willPublish ? 'published' : 'draft',
-      share_slug: slug,
-    })
-    .eq('id', id)
+    const { error: publishError } = await supabase
+      .from('experiences')
+      .update({
+        status: willPublish ? 'published' : 'draft',
+        share_slug: slug,
+      })
+      .eq('id', id)
 
-  setSaving(false)
+    setSaving(false)
 
-  if (publishError) {
-    setError(publishError.message)
-    return
+    if (publishError) {
+      setError(publishError.message)
+      return
+    }
+
+    navigate('/dashboard')
   }
-
-  navigate('/dashboard')
-}
-async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') {
-  if (!id) return
-  setVisibility(newVisibility)
-
-  const { error: visibilityError } = await supabase
-    .from('experiences')
-    .update({ visibility: newVisibility })
-    .eq('id', id)
-
-  if (visibilityError) {
-    setError(visibilityError.message)
-  }
-}
 
   async function handleDelete() {
     if (!id) return
@@ -195,11 +195,13 @@ async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') 
       <div className="min-h-screen bg-bg">
         <Navbar />
         <p className="px-6 py-12 text-red-500">
-          Couldn't load this experience. It may not exist, or you may not have access to it.
+          Could not load this experience. It may not exist, or you may not have access to it.
         </p>
       </div>
     )
   }
+
+  const publicUrl = window.location.origin + '/experience/' + experience.share_slug
 
   return (
     <div className="min-h-screen bg-bg">
@@ -207,16 +209,16 @@ async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') 
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-medium text-ink">Edit experience</h1>
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              experience.status === 'published'
-                ? 'bg-accent/15 text-accent'
-                : 'bg-ink-soft/10 text-ink-soft'
-            }`}
-          >
+          <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-ink-soft/10 text-ink-soft">
             {experience.status}
           </span>
         </div>
+
+        {experience.status === 'published' && experience.share_slug ? (
+          <p className="mt-2 text-sm text-ink-soft">
+            Public link: <a href={publicUrl} target="_blank" rel="noreferrer" className="text-accent underline">{publicUrl}</a>
+          </p>
+        ) : null}
 
         <form onSubmit={handleSave} className="mt-8 space-y-6">
           <div>
@@ -275,7 +277,7 @@ async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') 
             />
           </div>
 
-                    <div>
+          <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink">Description</label>
             <textarea
               id="description"
@@ -286,24 +288,7 @@ async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') 
             />
           </div>
 
-          <div>
-            <label htmlFor="visibility" className="block text-sm font-medium text-ink">
-              Who can see this once published
-            </label>
-           <select
-  id="visibility"
-  value={visibility}
-  onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'invite_only')}
-  className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
->
-              <option value="private">Only me</option>
-              <option value="invite_only">Only people I invite</option>
-            </select>
-
-            {visibility === 'invite_only' && <InviteSection experienceId={experience.id} />}
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error ? <p className="text-sm text-red-500">{error}</p> : null}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
@@ -332,7 +317,24 @@ async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') 
               Delete
             </button>
           </div>
-               </form>
+        </form>
+
+        <div className="mt-8">
+          <label htmlFor="visibility" className="block text-sm font-medium text-ink">
+            Who can see this once published
+          </label>
+          <select
+            id="visibility"
+            value={visibility}
+            onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'invite_only')}
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
+          >
+            <option value="private">Only me</option>
+            <option value="invite_only">Only people I invite</option>
+          </select>
+
+          {visibility === 'invite_only' ? <InviteSection experienceId={experience.id} /> : null}
+        </div>
 
         <div className="mt-14 space-y-12 border-t border-border pt-10">
           <PhotoGallerySection experienceId={experience.id} />
