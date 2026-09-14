@@ -4,6 +4,7 @@ import { HowItWorks } from '../components/landing/HowItWorks'
 import { Features } from '../components/landing/Features'
 import { ExperiencePreview } from '../components/landing/ExperiencePreview'
 import { FinalCTA } from '../components/landing/FinalCTA'
+import { Footer } from '../components/layout/Footer'
 
 export function LandingPage() {
   return (
@@ -14,6 +15,7 @@ export function LandingPage() {
       <Features />
       <ExperiencePreview />
       <FinalCTA />
+      <Footer />
     </div>
   )
 }
