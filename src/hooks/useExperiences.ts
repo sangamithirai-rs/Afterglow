@@ -11,9 +11,22 @@ export function useExperiences() {
     let isMounted = true
 
     async function fetchExperiences() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!isMounted) return
+
+      if (!user) {
+        setExperiences([])
+        setLoading(false)
+        return
+      }
+
       const { data, error: fetchError } = await supabase
         .from('experiences')
         .select('*')
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
 
       if (!isMounted) return
@@ -23,6 +36,7 @@ export function useExperiences() {
       } else {
         setExperiences(data ?? [])
       }
+
       setLoading(false)
     }
 
