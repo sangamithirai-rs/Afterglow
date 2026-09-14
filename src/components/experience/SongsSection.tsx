@@ -58,25 +58,14 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
 
   return (
     <div>
-      {/* Heading */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
-          <h2 className="font-serif text-xl font-medium text-ink">
-            Songs
-          </h2>
-
-          <p className="mt-1 text-sm text-ink-soft">
-            The soundtrack of this experience.
-          </p>
-        </div>
-
-        {songs.length > 0 && (
-          <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-          </span>
-        )}
-      </div>
-
+      {/* Song count */}
+{songs.length > 0 && (
+  <div className="flex justify-end">
+    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+      {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+    </span>
+  </div>
+)}
       {/* Add song */}
       <form
         onSubmit={handleAdd}

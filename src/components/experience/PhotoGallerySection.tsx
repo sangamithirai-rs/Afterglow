@@ -86,24 +86,14 @@ export function PhotoGallerySection({
 
   return (
     <div>
-      {/* Section heading */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
-          <h2 className="font-serif text-xl font-medium text-ink">
-            Photos
-          </h2>
-
-          <p className="mt-1 text-sm text-ink-soft">
-            Build a gallery for this experience.
-          </p>
-        </div>
-
-        {photos.length > 0 && (
-          <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-            {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-          </span>
-        )}
-      </div>
+     {/* Photo count */}
+{photos.length > 0 && (
+  <div className="flex justify-end">
+    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+      {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+    </span>
+  </div>
+)}
 
       {/* Upload */}
       <div className="mt-6 border-t border-border pt-5">
