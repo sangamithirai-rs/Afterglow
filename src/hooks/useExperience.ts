@@ -8,10 +8,7 @@ export function useExperience(id: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) {
-      setLoading(false)
-      return
-    }
+    if (!id) return
 
     const experienceId = id
     let isMounted = true
@@ -30,6 +27,7 @@ export function useExperience(id: string | undefined) {
       } else {
         setExperience(data)
       }
+
       setLoading(false)
     }
 

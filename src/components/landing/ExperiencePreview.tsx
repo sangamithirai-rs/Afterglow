@@ -1,6 +1,9 @@
 export function ExperiencePreview() {
   return (
-    <section className="bg-bg-subtle px-6 py-20 md:py-28">
+    <section
+  id="explore"
+  className="bg-bg-subtle px-6 py-20 md:py-28"
+>
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>

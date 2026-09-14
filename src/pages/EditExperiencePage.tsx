@@ -44,18 +44,20 @@ export function EditExperiencePage() {
 
   const [linkCopied, setLinkCopied] = useState(false)
 
-  useEffect(() => {
-    if (!experience) return
+/* eslint-disable react-hooks/set-state-in-effect */
+useEffect(() => {
+  if (!experience) return
 
-    setTitle(experience.title)
-    setLocation(experience.location ?? '')
-    setEventDate(experience.event_date ?? '')
-    setDescription(experience.description ?? '')
-    setCoverImageUrl(experience.cover_image_url)
-    setVisibility(
-      experience.visibility as 'private' | 'unlisted' | 'invite_only'
-    )
-  }, [experience])
+  setTitle(experience.title)
+  setLocation(experience.location ?? '')
+  setEventDate(experience.event_date ?? '')
+  setDescription(experience.description ?? '')
+  setCoverImageUrl(experience.cover_image_url)
+  setVisibility(
+    experience.visibility as 'private' | 'unlisted' | 'invite_only'
+  )
+}, [experience])
+/* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     return () => {
@@ -381,7 +383,7 @@ export function EditExperiencePage() {
               </div>
 
               <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
-                <div className="aspect-[16/7] w-full">
+               <div className="aspect-[4/3] w-full sm:aspect-[16/7]">
                   {coverPreview || coverImageUrl ? (
                     <img
                       src={coverPreview ?? coverImageUrl ?? ''}
@@ -397,7 +399,7 @@ export function EditExperiencePage() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-border px-4 py-3">
+                <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-ink-soft">
                     JPG, PNG or WebP · Max 5MB
                   </p>
@@ -707,45 +709,44 @@ export function EditExperiencePage() {
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={(e) => {
-                const form = e.currentTarget
-                  .closest('main')
-                  ?.querySelector('form')
+         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+  <button
+    type="button"
+    disabled={saving}
+    onClick={(e) => {
+      const form = e.currentTarget
+        .closest('main')
+        ?.querySelector('form')
 
-                if (form) {
-                  form.requestSubmit()
-                }
-              }}
-              className="rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save changes'}
-            </button>
+      if (form) {
+        form.requestSubmit()
+      }
+    }}
+    className="w-full rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:w-auto"
+  >
+    {saving ? 'Saving...' : 'Save changes'}
+  </button>
 
-            <button
-              type="button"
-              onClick={handleTogglePublish}
-              disabled={saving}
-              className="rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50"
-            >
-              {experience.status === 'published'
-                ? 'Unpublish'
-                : 'Publish'}
-            </button>
+  <button
+    type="button"
+    onClick={handleTogglePublish}
+    disabled={saving}
+    className="w-full rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50 sm:w-auto"
+  >
+    {experience.status === 'published'
+      ? 'Unpublish'
+      : 'Publish'}
+  </button>
 
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={saving}
-              className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
-            >
-              Delete experience
-            </button>
-          </div>
-
+  <button
+    type="button"
+    onClick={handleDelete}
+    disabled={saving}
+    className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
+  >
+    Delete experience
+  </button>
+</div>
           <p className="mt-5 text-xs leading-relaxed text-ink-soft">
             Save your changes before leaving this page.
           </p>

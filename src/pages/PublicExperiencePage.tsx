@@ -6,19 +6,16 @@ import { MemoryReplay } from '../components/experience/MemoryReplay'
 
 export function PublicExperiencePage() {
   const { slug } = useParams<{ slug: string }>()
-
-  const { user, loading: authLoading } = useAuth()
-
-  console.log('AUTH:', {
-    loading: authLoading,
-    email: user?.email,
-    authenticated: !!user,
-  })
+  const { loading: authLoading } = useAuth()
 
   const { data, loading, error } = usePublicExperience(slug, authLoading)
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
+
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(
+    null,
+  )
   const [replayOpen, setReplayOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+
   useEffect(() => {
     if (selectedPhotoIndex === null || !data?.photos.length) return
 
@@ -31,7 +28,7 @@ export function PublicExperiencePage() {
 
       if (e.key === 'ArrowRight') {
         setSelectedPhotoIndex((current) =>
-          current === null ? null : (current + 1) % photos.length
+          current === null ? null : (current + 1) % photos.length,
         )
       }
 
@@ -39,7 +36,7 @@ export function PublicExperiencePage() {
         setSelectedPhotoIndex((current) =>
           current === null
             ? null
-            : (current - 1 + photos.length) % photos.length
+            : (current - 1 + photos.length) % photos.length,
         )
       }
     }
@@ -53,17 +50,26 @@ export function PublicExperiencePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg text-ink-soft">
-        Loading...
+      <div className="flex min-h-screen items-center justify-center bg-bg">
+        <p className="font-serif text-lg italic text-ink-soft">
+          Loading memory...
+        </p>
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-bg px-6 text-center">
-        <p className="font-serif text-2xl text-ink">Not found</p>
-        <p className="text-ink-soft">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+          Afterglow
+        </p>
+
+        <h1 className="font-serif text-3xl font-medium text-ink">
+          Memory not found
+        </h1>
+
+        <p className="max-w-md text-sm leading-relaxed text-ink-soft">
           {error ?? 'This experience does not exist.'}
         </p>
       </div>
@@ -71,183 +77,250 @@ export function PublicExperiencePage() {
   }
 
   const { experience, photos, songs, timelineEntries, people } = data
-  async function handleShare() {
-  const url = window.location.href
 
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: experience.title,
-        text: 'A memory worth keeping.',
-        url,
-      })
-    } catch {
-      // User cancelled the share sheet.
+  async function handleShare() {
+    const url = window.location.href
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: experience.title,
+          text: 'A memory worth keeping.',
+          url,
+        })
+      } catch {
+        // User cancelled the share sheet.
+      }
+
+      return
     }
 
-    return
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+
+      window.setTimeout(() => {
+        setShareCopied(false)
+      }, 2000)
+    } catch {
+      // Clipboard unavailable.
+    }
   }
 
-  try {
-    await navigator.clipboard.writeText(url)
-    setShareCopied(true)
-
-    window.setTimeout(() => {
-      setShareCopied(false)
-    }, 2000)
-  } catch {
-    // Clipboard unavailable.
-  }
-}
   return (
     <div className="min-h-screen bg-bg">
       {/* Hero */}
-<section className="relative min-h-[78vh] overflow-hidden">
-  {experience.cover_image_url ? (
-    <img
-      src={experience.cover_image_url}
-      alt={experience.title}
-      className="absolute inset-0 h-full w-full object-cover"
-    />
-  ) : (
-    <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--accent-soft)_0%,var(--bg)_55%,var(--surface)_100%)]" />
-  )}
-
-  {/* Cinematic overlay */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/20 to-black/80" />
-
-  {/* Hero content */}
-  <div className="relative z-10 flex min-h-[78vh] items-end">
-    <div className="w-full px-6 pb-12 sm:px-10 sm:pb-16 md:px-16 md:pb-20">
-      <div className="mx-auto max-w-5xl">
-        {(experience.event_date || experience.location) && (
-          <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-white/70 sm:text-sm">
-            {experience.event_date}
-            {experience.event_date && experience.location && '  ·  '}
-            {experience.location}
-          </p>
+      <section className="relative min-h-[68vh] overflow-hidden sm:min-h-[82vh]">
+        {experience.cover_image_url ? (
+          <img
+            src={experience.cover_image_url}
+            alt={experience.title}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--accent-soft)_0%,var(--bg)_55%,var(--surface)_100%)]" />
         )}
 
-        <h1 className="max-w-4xl font-serif text-4xl font-medium leading-[1.05] text-white sm:text-5xl md:text-7xl lg:text-8xl">
-          {experience.title}
-        </h1>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/85" />
 
-       {experience.description && (
-  <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-white/80 sm:text-xl md:text-2xl">
-    &ldquo;{experience.description}&rdquo;
-  </p>
-)}
+        <div className="relative z-10 flex min-h-[76vh] items-end sm:min-h-[82vh]">
+          <div className="w-full px-6 pb-10 sm:px-10 sm:pb-14 md:px-16 md:pb-20">
+            <div className="mx-auto max-w-5xl">
+              <div className="max-w-4xl">
+                <p className="mb-5 text-xs font-medium uppercase tracking-[0.25em] text-white/70 sm:text-sm">
+                  Afterglow
+                </p>
 
-<button
-  type="button"
-  onClick={() => setReplayOpen(true)}
-  className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-white/85"
->
-  Relive this →
-</button>
+                <h1 className="font-serif text-3xl font-medium leading-[1.05] text-white sm:text-5xl md:text-7xl lg:text-8xl">
+                  {experience.title}
+                </h1>
 
-<div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/60">
-          <span>Afterglow</span>
-          <span className="h-px w-8 bg-white/30" />
-          <span>A memory worth keeping</span>
+                {(experience.event_date || experience.location) && (
+                  <p className="mt-5 text-xs font-medium uppercase tracking-[0.2em] text-white/70 sm:text-sm">
+                    {experience.event_date}
+                    {experience.event_date &&
+                      experience.location &&
+                      '  ·  '}
+                    {experience.location}
+                  </p>
+                )}
+
+                {experience.description && (
+                  <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-white/80 sm:text-xl md:text-2xl">
+                    &ldquo;{experience.description}&rdquo;
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setReplayOpen(true)}
+                  className="mt-7 inline-flex w-full justify-center rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-white/85 sm:mt-8 sm:w-auto"
+                >
+                  Relive this →
+                </button>
+              </div>
+
+              <div className="mt-10 flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-white/50 sm:text-xs">
+                <span>A memory worth keeping</span>
+                <span className="h-px w-8 bg-white/30" />
+                <span>{photos.length} moments</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
-        {(experience.event_date || experience.location) && (
-          <p className="text-center text-sm uppercase tracking-wide text-ink-soft">
-            {experience.event_date}
-            {experience.event_date && experience.location && ' · '}
-            {experience.location}
+      <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20 md:py-24">
+        {/* Introduction */}
+        <section className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+            The experience
           </p>
-        )}
 
-        {/* Photos */}
-{photos.length > 0 && (
-  <section className="mt-16 sm:mt-24">
-    <div className="mb-7 flex items-end justify-between">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-          Memories
-        </p>
-        <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
-          Moments worth keeping
-        </h2>
-      </div>
+          <h2 className="mt-3 font-serif text-3xl font-medium text-ink sm:text-4xl">
+            A moment, kept intact.
+          </h2>
 
-      <p className="hidden text-sm text-ink-soft sm:block">
-        {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-      </p>
-    </div>
-
-    <div className="grid gap-3 sm:grid-cols-2">
-      {photos.slice(0, 5).map((photo, index) => (
-        <button
-          key={photo.id}
-          type="button"
-          onClick={() => setSelectedPhotoIndex(index)}
-          className={`group relative overflow-hidden rounded-xl border border-border bg-surface text-left ${
-            index === 0 && photos.length > 1
-              ? 'sm:row-span-2 sm:aspect-[4/5]'
-              : 'aspect-[4/3]'
-          }`}
-        >
-          <img
-            src={photo.storage_path}
-            alt={photo.caption ?? ''}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-
-          {photo.caption && (
-            <p className="absolute bottom-4 left-4 right-4 translate-y-2 text-sm text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-              {photo.caption}
+          {(experience.event_date || experience.location) && (
+            <p className="mt-4 text-xs uppercase tracking-[0.16em] text-ink-soft">
+              {experience.event_date}
+              {experience.event_date && experience.location && ' · '}
+              {experience.location}
             </p>
           )}
-        </button>
-      ))}
-    </div>
+        </section>
 
-    {photos.length > 5 && (
-      <button
-        type="button"
-       onClick={() => setSelectedPhotoIndex(0)}
-        className="mt-3 w-full rounded-xl border border-border bg-surface py-3 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface/80"
-      >
-        View all {photos.length} photos
-      </button>
-    )}
-  </section>
-)}
+        {/* Photos */}
+        {photos.length > 0 && (
+          <section className="mt-16 border-t border-border pt-12 sm:mt-24 sm:pt-16">
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+                  01
+                </p>
+
+                <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+                  The moments
+                </h2>
+              </div>
+
+              <p className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+                {photos.length}{' '}
+                {photos.length === 1 ? 'photo' : 'photos'}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {photos.slice(0, 5).map((photo, index) => (
+                <button
+                  key={photo.id}
+                  type="button"
+                  onClick={() => setSelectedPhotoIndex(index)}
+                  className={`group relative overflow-hidden border border-border bg-surface text-left ${
+                    index === 0 && photos.length > 1
+                      ? 'sm:row-span-2 sm:aspect-[4/5]'
+                      : 'aspect-[4/3]'
+                  }`}
+                >
+                  <img
+                    src={photo.storage_path}
+                    alt={photo.caption ?? ''}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+
+                  {photo.caption && (
+                    <p className="absolute bottom-4 left-4 right-4 translate-y-2 text-sm text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      {photo.caption}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {photos.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoIndex(0)}
+                className="mt-3 w-full border border-border py-3 text-xs font-medium uppercase tracking-[0.14em] text-ink transition hover:border-accent-soft hover:bg-surface"
+              >
+                View all {photos.length} photos →
+              </button>
+            )}
+          </section>
+        )}
 
         {/* Timeline */}
         {timelineEntries.length > 0 && (
-          <section className="mt-12 sm:mt-16">
-            <h2 className="mb-6 font-serif text-2xl font-medium text-ink">
-              Timeline
-            </h2>
+          <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
+            <div className="mb-8">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+                02
+              </p>
 
-            <div className="space-y-6 border-l border-border pl-6">
-              {timelineEntries.map((entry) => (
-                <div key={entry.id}>
-                  {entry.entry_date && (
-                    <p className="text-xs uppercase tracking-wide text-accent">
-                      {entry.entry_date}
-                    </p>
-                  )}
+              <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+                How it unfolded
+              </h2>
+            </div>
 
-                  <p className="mt-1 font-medium text-ink">
-                    {entry.title}
+            <div className="max-w-3xl">
+              <div className="space-y-0">
+                {timelineEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="grid gap-2 border-t border-border py-6 sm:grid-cols-[140px_1fr] sm:gap-8"
+                  >
+                    <div>
+                      {entry.entry_date && (
+                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-accent">
+                          {entry.entry_date}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="font-serif text-xl font-medium text-ink">
+                        {entry.title}
+                      </p>
+
+                      {entry.note && (
+                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+                          {entry.note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* People */}
+        {people.length > 0 && (
+          <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
+            <div className="mb-8">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+                03
+              </p>
+
+              <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+                Who was there
+              </h2>
+            </div>
+
+            <div className="flex flex-wrap gap-x-8 gap-y-5">
+              {people.map((person) => (
+                <div key={person.id}>
+                  <p className="font-serif text-lg font-medium text-ink">
+                    {person.name}
                   </p>
 
-                  {entry.note && (
-                    <p className="mt-1 text-sm text-ink-soft">
-                      {entry.note}
+                  {person.relationship && (
+                    <p className="mt-1 text-xs uppercase tracking-[0.12em] text-ink-soft">
+                      {person.relationship}
                     </p>
                   )}
                 </div>
@@ -256,84 +329,77 @@ export function PublicExperiencePage() {
           </section>
         )}
 
-        {/* People */}
-        {people.length > 0 && (
-          <section className="mt-12 sm:mt-16">
-            <h2 className="mb-6 font-serif text-2xl font-medium text-ink">
-              People
-            </h2>
+        {/* Songs */}
+        {songs.length > 0 && (
+          <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
+            <div className="mb-8">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+                04
+              </p>
 
-            <div className="flex flex-wrap gap-2">
-              {people.map((person) => (
-                <span
-                  key={person.id}
-                  className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-ink"
+              <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+                The soundtrack
+              </h2>
+            </div>
+
+            <div className="max-w-2xl">
+              {songs.map((song, index) => (
+                <div
+                  key={song.id}
+                  className={`flex items-baseline justify-between gap-6 py-4 ${
+                    index !== 0 ? 'border-t border-border' : ''
+                  }`}
                 >
-                  {person.name}
+                  <p className="font-serif text-lg text-ink">
+                    {song.title}
+                  </p>
 
-                  {person.relationship && (
-                    <span className="text-ink-soft">
-                      {' · '}
-                      {person.relationship}
-                    </span>
+                  {song.artist && (
+                    <p className="text-sm text-ink-soft">
+                      {song.artist}
+                    </p>
                   )}
-                </span>
+                </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Songs */}
-        {songs.length > 0 && (
-          <section className="mt-12 sm:mt-16">
-            <h2 className="mb-6 font-serif text-2xl font-medium text-ink">
-              Songs
-            </h2>
-
-            <ul className="space-y-2">
-              {songs.map((song) => (
-                <li key={song.id} className="text-ink">
-                  {song.title}
-
-                  {song.artist && (
-                    <span className="text-ink-soft">
-                      {' — '}
-                      {song.artist}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         {/* Share */}
-<section className="mt-20 border-t border-border pt-10 text-center sm:mt-24">
-  <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-    Keep the memory close
-  </p>
+        <section className="mt-20 border-t border-border pt-14 text-center sm:mt-28 sm:pt-16">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+            Keep the memory close
+          </p>
 
-  <h2 className="mt-3 font-serif text-3xl font-medium text-ink">
-    Share this memory
-  </h2>
+          <h2 className="mt-3 font-serif text-3xl font-medium text-ink sm:text-4xl">
+            Share this memory
+          </h2>
 
-  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-ink-soft">
-    Let someone else relive this moment with you.
-  </p>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink-soft">
+            Let someone else relive this moment with you.
+          </p>
 
-  <button
-    type="button"
-    onClick={handleShare}
-    className="mt-6 rounded-full border border-border bg-surface px-6 py-3 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface/80"
-  >
-    {shareCopied ? '✓ Link copied' : 'Share this memory'}
-  </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="mt-7 rounded-full border border-border bg-surface px-6 py-3 text-sm font-medium text-ink transition hover:border-accent-soft"
+          >
+            {shareCopied ? '✓ Link copied' : 'Share this memory'}
+          </button>
 
-  <p className="mt-4 text-xs text-ink-soft">
-    Anyone with the link can view this experience.
-  </p>
-</section>
-       
-      </div>
+          <p className="mt-4 text-xs text-ink-soft">
+            Anyone with the link can view this experience.
+          </p>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-20 border-t border-border pt-8 text-center sm:mt-24">
+          <p className="font-serif text-lg text-ink">Afterglow</p>
+          <p className="mt-1 text-xs text-ink-soft">
+            A memory worth keeping.
+          </p>
+        </footer>
+      </main>
 
       {/* Fullscreen Photo Viewer */}
       {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
@@ -341,7 +407,6 @@ export function PublicExperiencePage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
           onClick={() => setSelectedPhotoIndex(null)}
         >
-          {/* Close */}
           <button
             type="button"
             onClick={() => setSelectedPhotoIndex(null)}
@@ -351,14 +416,13 @@ export function PublicExperiencePage() {
             ×
           </button>
 
-          {/* Previous */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation()
 
               setSelectedPhotoIndex(
-                (selectedPhotoIndex - 1 + photos.length) % photos.length
+                (selectedPhotoIndex - 1 + photos.length) % photos.length,
               )
             }}
             className="absolute left-3 z-10 rounded-full bg-white/10 px-4 py-3 text-2xl text-white transition hover:bg-white/20 sm:left-6"
@@ -367,7 +431,6 @@ export function PublicExperiencePage() {
             ‹
           </button>
 
-          {/* Image */}
           <div
             className="flex max-h-[90vh] max-w-5xl flex-col items-center"
             onClick={(e) => e.stopPropagation()}
@@ -375,7 +438,7 @@ export function PublicExperiencePage() {
             <img
               src={photos[selectedPhotoIndex].storage_path}
               alt={photos[selectedPhotoIndex].caption ?? ''}
-              className="max-h-[78vh] max-w-full rounded-lg object-contain"
+              className="max-h-[78vh] max-w-full object-contain"
             />
 
             {photos[selectedPhotoIndex].caption && (
@@ -385,14 +448,13 @@ export function PublicExperiencePage() {
             )}
           </div>
 
-          {/* Next */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation()
 
               setSelectedPhotoIndex(
-                (selectedPhotoIndex + 1) % photos.length
+                (selectedPhotoIndex + 1) % photos.length,
               )
             }}
             className="absolute right-3 z-10 rounded-full bg-white/10 px-4 py-3 text-2xl text-white transition hover:bg-white/20 sm:right-6"
@@ -401,14 +463,15 @@ export function PublicExperiencePage() {
             ›
           </button>
 
-          {/* Counter */}
           <p className="absolute bottom-4 left-0 right-0 text-center text-xs text-white/60">
             {selectedPhotoIndex + 1} / {photos.length}
           </p>
         </div>
       )}
+
+      {/* Memory Replay */}
       {replayOpen && (
-       <MemoryReplay
+        <MemoryReplay
           experience={experience}
           photos={photos}
           songs={songs}

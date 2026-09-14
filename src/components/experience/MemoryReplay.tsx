@@ -52,31 +52,33 @@ export function MemoryReplay({
   const timelineStart = photoStart + photos.length
   const peopleStep = timelineStart + timelineEntries.length
   const songsStep = peopleStep + (people.length > 0 ? 1 : 0)
-  
+
   let content
 
   if (step === 0) {
     content = (
-      <div className="text-center">
+      <div className="w-full max-w-3xl text-center">
         {experience.cover_image_url && (
           <img
             src={experience.cover_image_url}
             alt={experience.title}
-            className="mx-auto mb-8 max-h-[45vh] w-full max-w-3xl rounded-2xl object-cover"
+            className="mx-auto mb-6 max-h-[42vh] w-full object-cover sm:mb-8 sm:max-h-[48vh]"
           />
         )}
 
-        <p className="text-xs uppercase tracking-[0.25em] text-white/60">
-          {experience.event_date}
-          {experience.event_date && experience.location && ' · '}
-          {experience.location}
-        </p>
+        {(experience.event_date || experience.location) && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/60 sm:text-xs sm:tracking-[0.25em]">
+            {experience.event_date}
+            {experience.event_date && experience.location && ' · '}
+            {experience.location}
+          </p>
+        )}
 
-        <h1 className="mt-4 font-serif text-4xl text-white sm:text-6xl">
+        <h1 className="mt-4 font-serif text-3xl leading-tight text-white sm:text-5xl md:text-6xl">
           {experience.title}
         </h1>
 
-        <p className="mt-5 text-sm text-white/60">
+        <p className="mt-4 text-sm text-white/50">
           A memory worth keeping.
         </p>
       </div>
@@ -85,15 +87,15 @@ export function MemoryReplay({
     const photo = photos[step - photoStart]
 
     content = photo ? (
-      <div className="text-center">
+      <div className="flex w-full max-w-5xl flex-col items-center text-center">
         <img
           src={photo.storage_path}
           alt={photo.caption ?? ''}
-          className="mx-auto max-h-[72vh] max-w-full rounded-2xl object-contain"
+          className="max-h-[64vh] max-w-full object-contain sm:max-h-[72vh]"
         />
 
         {photo.caption && (
-          <p className="mt-5 font-serif text-lg italic text-white/80">
+          <p className="mt-4 max-w-xl font-serif text-base italic text-white/80 sm:mt-5 sm:text-lg">
             {photo.caption}
           </p>
         )}
@@ -103,17 +105,19 @@ export function MemoryReplay({
     const entry = timelineEntries[step - timelineStart]
 
     content = entry ? (
-      <div className="max-w-2xl text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-white/50">
-          {entry.entry_date}
-        </p>
+      <div className="w-full max-w-2xl px-2 text-center">
+        {entry.entry_date && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 sm:text-xs sm:tracking-[0.25em]">
+            {entry.entry_date}
+          </p>
+        )}
 
-        <h2 className="mt-5 font-serif text-4xl text-white sm:text-5xl">
+        <h2 className="mt-4 font-serif text-3xl leading-tight text-white sm:mt-5 sm:text-5xl">
           {entry.title}
         </h2>
 
         {entry.note && (
-          <p className="mt-5 text-lg leading-relaxed text-white/70">
+          <p className="mt-4 text-base leading-relaxed text-white/70 sm:mt-5 sm:text-lg">
             {entry.note}
           </p>
         )}
@@ -121,20 +125,20 @@ export function MemoryReplay({
     ) : null
   } else if (people.length > 0 && step === peopleStep) {
     content = (
-      <div className="max-w-2xl text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-white/50">
+      <div className="w-full max-w-2xl px-2 text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 sm:text-xs sm:tracking-[0.25em]">
           The people
         </p>
 
-        <h2 className="mt-5 font-serif text-4xl text-white sm:text-5xl">
+        <h2 className="mt-4 font-serif text-3xl leading-tight text-white sm:mt-5 sm:text-5xl">
           The ones who were there
         </h2>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="mt-7 flex max-h-[45vh] flex-wrap justify-center gap-2 overflow-y-auto sm:mt-8 sm:gap-3">
           {people.map((person) => (
             <span
               key={person.id}
-              className="rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm text-white/80"
+              className="border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/80"
             >
               {person.name}
               {person.relationship && ` · ${person.relationship}`}
@@ -145,24 +149,29 @@ export function MemoryReplay({
     )
   } else if (songs.length > 0 && step === songsStep) {
     content = (
-      <div className="max-w-2xl text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-white/50">
+      <div className="w-full max-w-2xl px-2 text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 sm:text-xs sm:tracking-[0.25em]">
           The soundtrack
         </p>
 
-        <h2 className="mt-5 font-serif text-4xl text-white sm:text-5xl">
+        <h2 className="mt-4 font-serif text-3xl leading-tight text-white sm:mt-5 sm:text-5xl">
           Songs that belong to this memory
         </h2>
 
-        <div className="mt-8 space-y-3">
+        <div className="mt-7 max-h-[48vh] space-y-2 overflow-y-auto text-left sm:mt-8 sm:space-y-3">
           {songs.map((song) => (
             <div
               key={song.id}
-              className="rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-left"
+              className="border border-white/10 bg-white/5 px-4 py-3 sm:px-5 sm:py-4"
             >
-              <p className="text-white">{song.title}</p>
+              <p className="text-sm text-white sm:text-base">
+                {song.title}
+              </p>
+
               {song.artist && (
-                <p className="mt-1 text-sm text-white/50">{song.artist}</p>
+                <p className="mt-1 text-xs text-white/50 sm:text-sm">
+                  {song.artist}
+                </p>
               )}
             </div>
           ))}
@@ -171,17 +180,17 @@ export function MemoryReplay({
     )
   } else {
     content = (
-      <div className="max-w-2xl text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-white/50">
+      <div className="w-full max-w-2xl px-2 text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 sm:text-xs sm:tracking-[0.25em]">
           Afterglow
         </p>
 
-        <h2 className="mt-5 font-serif text-4xl text-white sm:text-6xl">
+        <h2 className="mt-4 font-serif text-3xl leading-tight text-white sm:mt-5 sm:text-5xl md:text-6xl">
           Some moments deserve to stay.
         </h2>
 
         {experience.description && (
-          <p className="mt-7 font-serif text-lg italic leading-relaxed text-white/70 sm:text-xl">
+          <p className="mt-6 font-serif text-base italic leading-relaxed text-white/70 sm:mt-7 sm:text-xl">
             &ldquo;{experience.description}&rdquo;
           </p>
         )}
@@ -189,7 +198,7 @@ export function MemoryReplay({
         <button
           type="button"
           onClick={onClose}
-          className="mt-10 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-white/80"
+          className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-white/80 sm:mt-10"
         >
           Return to experience
         </button>
@@ -198,60 +207,76 @@ export function MemoryReplay({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex min-h-screen flex-col bg-black">
-      <div className="flex items-center justify-between px-5 py-5 sm:px-8">
-        <span className="text-xs uppercase tracking-[0.2em] text-white/40">
+    <div className="fixed inset-0 z-[60] flex min-h-screen flex-col overflow-hidden bg-black">
+      {/* Top bar */}
+      <header className="flex shrink-0 items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 sm:text-xs">
           Afterglow
         </span>
 
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full px-4 py-2 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="rounded-full px-3 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm"
         >
           Close
         </button>
-      </div>
+      </header>
 
-      <div className="flex flex-1 items-center justify-center overflow-hidden px-5 pb-20 sm:px-10">
+      {/* Main content */}
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-5 pb-24 pt-2 sm:px-10 sm:pb-24">
         {content}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-5 sm:px-8">
-        <button
-          type="button"
-          onClick={() => setStep((current) => Math.max(current - 1, 0))}
-          disabled={step === 0}
-          className="rounded-full px-4 py-2 text-sm text-white/60 transition hover:bg-white/10 hover:text-white disabled:invisible"
-        >
-          ← Back
-        </button>
-
-        <div className="flex gap-1.5">
-          {Array.from({ length: totalSteps }).map((_, index) => (
-            <span
-              key={index}
-              className={`h-1 rounded-full transition-all ${
-                index === step ? 'w-6 bg-white' : 'w-1.5 bg-white/30'
-              }`}
-            />
-          ))}
-        </div>
-
-        {step < totalSteps - 1 ? (
+      {/* Bottom controls */}
+      <footer className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/95 to-transparent px-4 pb-4 pt-10 sm:px-8 sm:pb-6">
+        <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() =>
-              setStep((current) => Math.min(current + 1, totalSteps - 1))
-            }
-            className="rounded-full px-4 py-2 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
+            onClick={() => setStep((current) => Math.max(current - 1, 0))}
+            disabled={step === 0}
+            className="shrink-0 rounded-full px-3 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white disabled:invisible sm:px-4 sm:text-sm"
           >
-            Next →
+            ← Back
           </button>
-        ) : (
-          <span className="w-16" />
-        )}
-      </div>
+
+          {/* Progress */}
+          <div className="flex min-w-0 flex-1 justify-center gap-1 overflow-hidden px-2">
+            {Array.from({ length: totalSteps }).map((_, index) => {
+              const distance = Math.abs(index - step)
+
+              return (
+                <span
+                  key={index}
+                  className={`h-1 shrink-0 rounded-full transition-all ${
+                    index === step
+                      ? 'w-5 bg-white sm:w-6'
+                      : distance <= 2
+                        ? 'w-1.5 bg-white/30'
+                        : 'w-1 bg-white/15'
+                  }`}
+                />
+              )
+            })}
+          </div>
+
+          {step < totalSteps - 1 ? (
+            <button
+              type="button"
+              onClick={() =>
+                setStep((current) =>
+                  Math.min(current + 1, totalSteps - 1),
+                )
+              }
+              className="shrink-0 rounded-full px-3 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm"
+            >
+              Next →
+            </button>
+          ) : (
+            <span className="w-[52px] shrink-0 sm:w-[64px]" />
+          )}
+        </div>
+      </footer>
     </div>
   )
 }

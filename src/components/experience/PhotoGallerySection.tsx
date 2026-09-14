@@ -6,9 +6,14 @@ import { useAuth } from '../../contexts/AuthContext'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
-export function PhotoGallerySection({ experienceId }: { experienceId: string }) {
+export function PhotoGallerySection({
+  experienceId,
+}: {
+  experienceId: string
+}) {
   const { user } = useAuth()
   const { photos, loading, refetch } = usePhotos(experienceId)
+
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,6 +25,7 @@ export function PhotoGallerySection({ experienceId }: { experienceId: string }) 
       setError('Please upload a JPEG, PNG, or WebP image.')
       return
     }
+
     if (file.size > MAX_FILE_SIZE) {
       setError('Image must be smaller than 5MB.')
       return
@@ -41,7 +47,9 @@ export function PhotoGallerySection({ experienceId }: { experienceId: string }) 
       return
     }
 
-    const { data } = supabase.storage.from('experience-images').getPublicUrl(filePath)
+    const { data } = supabase.storage
+      .from('experience-images')
+      .getPublicUrl(filePath)
 
     const { error: insertError } = await supabase.from('photos').insert({
       experience_id: experienceId,
@@ -60,42 +68,103 @@ export function PhotoGallerySection({ experienceId }: { experienceId: string }) 
     refetch()
   }
 
- async function handleDelete(photoId: string) {
+  async function handleDelete(photoId: string) {
     setError(null)
-    const { error: deleteError } = await supabase.from('photos').delete().eq('id', photoId)
+
+    const { error: deleteError } = await supabase
+      .from('photos')
+      .delete()
+      .eq('id', photoId)
+
     if (deleteError) {
       setError('Could not remove photo: ' + deleteError.message)
       return
     }
+
     refetch()
-}
+  }
 
   return (
     <div>
-      <h2 className="font-serif text-xl font-medium text-ink">Photos</h2>
-      <p className="mt-1 text-sm text-ink-soft">Build a gallery for this experience.</p>
+      {/* Section heading */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+        <div>
+          <h2 className="font-serif text-xl font-medium text-ink">
+            Photos
+          </h2>
 
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+          <p className="mt-1 text-sm text-ink-soft">
+            Build a gallery for this experience.
+          </p>
+        </div>
 
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleFileChange}
-        disabled={uploading}
-        className="mt-3 text-sm text-ink-soft file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-accent-soft disabled:opacity-50"
-      />
+        {photos.length > 0 && (
+          <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+            {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+          </span>
+        )}
+      </div>
 
+      {/* Upload */}
+      <div className="mt-6 border-t border-border pt-5">
+        <label className="inline-flex cursor-pointer items-center rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface">
+          {uploading ? 'Uploading...' : '+ Add photo'}
+
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="sr-only"
+          />
+        </label>
+
+        <p className="mt-2 text-xs text-ink-soft">
+          JPEG, PNG or WebP · Max 5MB
+        </p>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="mt-4 border-l-2 border-red-500 px-3 py-1 text-sm text-red-500">
+          {error}
+        </p>
+      )}
+
+      {/* Gallery */}
       {loading ? (
-        <p className="mt-4 text-sm text-ink-soft">Loading photos...</p>
+        <p className="mt-6 text-sm text-ink-soft">
+          Loading photos...
+        </p>
+      ) : photos.length === 0 ? (
+        <div className="mt-6 border-t border-border py-10 text-center">
+          <p className="font-serif text-lg text-ink">
+            No photos yet.
+          </p>
+
+          <p className="mt-1 text-sm text-ink-soft">
+            Add a few moments to bring this experience to life.
+          </p>
+        </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((photo) => (
-            <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
-              <img src={photo.storage_path} alt={photo.caption ?? ''} className="h-full w-full object-cover" />
+            <div
+              key={photo.id}
+              className="group relative aspect-square overflow-hidden border border-border bg-bg-subtle"
+            >
+              <img
+                src={photo.storage_path}
+                alt={photo.caption ?? ''}
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+              />
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+
               <button
                 type="button"
                 onClick={() => handleDelete(photo.id)}
-                className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white opacity-0 transition group-hover:opacity-100"
+                className="absolute right-2 top-2 rounded-full bg-black/65 px-3 py-1.5 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80"
               >
                 Remove
               </button>

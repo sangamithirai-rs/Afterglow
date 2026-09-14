@@ -21,17 +21,16 @@ export function usePublicExperience(
   useEffect(() => {
     if (authLoading) return
 
-    if (!slug) {
-      setData(null)
-      setLoading(false)
-      setError('This experience could not be found.')
-      return
-    }
+    const fetchAll = async () => {
+      if (!slug) {
+        setData(null)
+        setLoading(false)
+        setError('This experience could not be found.')
+        return
+      }
 
-    const experienceSlug = slug
-    let isMounted = true
-
-    async function fetchAll() {
+      const experienceSlug = slug
+      const isMounted = true
       setLoading(true)
       setError(null)
 
@@ -93,10 +92,6 @@ export function usePublicExperience(
     }
 
     fetchAll()
-
-    return () => {
-      isMounted = false
-    }
   }, [slug, authLoading])
 
   return { data, loading, error }

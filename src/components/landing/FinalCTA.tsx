@@ -23,7 +23,7 @@ export function FinalCTA() {
           {user ? (
             <Link
               to="/dashboard"
-              className="inline-flex rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+             className="inline-flex w-full justify-center rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft sm:w-auto"
             >
               My Afterglows
             </Link>
@@ -31,7 +31,7 @@ export function FinalCTA() {
             <button
               type="button"
               onClick={signInWithGoogle}
-              className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+              className="w-full rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft sm:w-auto"
             >
               Start your Afterglow
             </button>

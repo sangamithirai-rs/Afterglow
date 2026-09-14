@@ -4,6 +4,7 @@ import { useSongs } from '../../hooks/useSongs'
 
 export function SongsSection({ experienceId }: { experienceId: string }) {
   const { songs, loading, refetch } = useSongs(experienceId)
+
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
   const [saving, setSaving] = useState(false)
@@ -11,10 +12,11 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
-   if (!title.trim()) {
-  setError('Enter a song title.')
-  return
-}
+
+    if (!title.trim()) {
+      setError('Enter a song title.')
+      return
+    }
 
     setSaving(true)
     setError(null)
@@ -40,61 +42,126 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
 
   async function handleDelete(songId: string) {
     setError(null)
-    const { error: deleteError } = await supabase.from('songs').delete().eq('id', songId)
+
+    const { error: deleteError } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', songId)
+
     if (deleteError) {
       setError('Could not remove song: ' + deleteError.message)
       return
     }
+
     refetch()
   }
 
   return (
     <div>
-      <h2 className="font-serif text-xl font-medium text-ink">Songs</h2>
-      <p className="mt-1 text-sm text-ink-soft">The soundtrack of this experience.</p>
+      {/* Heading */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+        <div>
+          <h2 className="font-serif text-xl font-medium text-ink">
+            Songs
+          </h2>
 
-      <form onSubmit={handleAdd} className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Song title"
-          className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-soft focus:outline-none"
-        />
-        <input
-          type="text"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-          placeholder="Artist (optional)"
-          className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-soft focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
-        >
-          Add
-        </button>
+          <p className="mt-1 text-sm text-ink-soft">
+            The soundtrack of this experience.
+          </p>
+        </div>
+
+        {songs.length > 0 && (
+          <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+          </span>
+        )}
+      </div>
+
+      {/* Add song */}
+      <form
+        onSubmit={handleAdd}
+        className="mt-6 border-t border-border pt-5"
+      >
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Song title"
+            className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
+          />
+
+          <input
+            type="text"
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
+            placeholder="Artist (optional)"
+            className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
+          />
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-fit rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
+          >
+            {saving ? 'Adding...' : '+ Add song'}
+          </button>
+        </div>
       </form>
 
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {/* Error */}
+      {error && (
+        <p className="mt-4 border-l-2 border-red-500 px-3 py-1 text-sm text-red-500">
+          {error}
+        </p>
+      )}
 
+      {/* Songs */}
       {loading ? (
-        <p className="mt-4 text-sm text-ink-soft">Loading songs...</p>
+        <p className="mt-6 text-sm text-ink-soft">
+          Loading songs...
+        </p>
+      ) : songs.length === 0 ? (
+        <div className="mt-6 border-t border-border py-10 text-center">
+          <p className="font-serif text-lg text-ink">
+            No songs yet.
+          </p>
+
+          <p className="mt-1 text-sm text-ink-soft">
+            Add the songs that belong to this memory.
+          </p>
+        </div>
       ) : (
-        <ul className="mt-4 space-y-2">
-          {songs.map((song) => (
-            <li key={song.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5">
-              <span className="text-sm text-ink">
-                {song.title}
-                {song.artist && <span className="text-ink-soft"> — {song.artist}</span>}
-              </span>
-              <button type="button" onClick={() => handleDelete(song.id)} className="text-xs text-ink-soft hover:text-red-500">
+        <div className="mt-6">
+          {songs.map((song, index) => (
+            <div
+              key={song.id}
+              className={`flex items-center justify-between gap-6 py-4 ${
+                index !== 0 ? 'border-t border-border' : ''
+              }`}
+            >
+              <div className="min-w-0">
+                <p className="font-serif text-lg text-ink">
+                  {song.title}
+                </p>
+
+                {song.artist && (
+                  <p className="mt-0.5 text-sm text-ink-soft">
+                    {song.artist}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleDelete(song.id)}
+                className="shrink-0 text-xs font-medium uppercase tracking-[0.12em] text-ink-soft transition hover:text-red-500"
+              >
                 Remove
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )
