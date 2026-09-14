@@ -33,6 +33,7 @@ export function EditExperiencePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [visibility, setVisibility] = useState<'private' | 'unlisted' | 'invite_only'>('private')
+  const [linkCopied, setLinkCopied] = useState(false)
   useEffect(() => {
     if (!experience) return
     setTitle(experience.title)
@@ -84,6 +85,22 @@ export function EditExperiencePage() {
     const { data } = supabase.storage.from('experience-images').getPublicUrl(filePath)
     return data.publicUrl
   }
+  async function handleCopyLink() {
+  if (!experience?.share_slug) return
+
+  const url = `${window.location.origin}/experience/${experience.share_slug}`
+
+  try {
+    await navigator.clipboard.writeText(url)
+    setLinkCopied(true)
+
+    window.setTimeout(() => {
+      setLinkCopied(false)
+    }, 2000)
+  } catch {
+    setError('Could not copy the link. Please copy it manually.')
+  }
+}
 
   async function handleSave(e: FormEvent) {
     e.preventDefault()
@@ -216,10 +233,44 @@ export function EditExperiencePage() {
         </div>
 
         {experience.status === 'published' && experience.share_slug ? (
-          <p className="mt-2 text-sm text-ink-soft">
-            Public link: <a href={publicUrl} target="_blank" rel="noreferrer" className="text-accent underline">{publicUrl}</a>
-          </p>
-        ) : null}
+  <div className="mt-6 rounded-xl border border-border bg-surface p-5">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium text-ink">Share this experience</p>
+        <p className="mt-1 text-xs text-ink-soft">
+          {visibility === 'unlisted'
+            ? 'Anyone with this link can view it. It will not appear in other users’ dashboards.'
+            : visibility === 'invite_only'
+              ? 'Only people you invite can view this experience.'
+              : 'This experience is private and cannot be viewed through this link.'}
+        </p>
+      </div>
+    </div>
+
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <div className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2.5">
+        <p className="truncate text-sm text-ink-soft">{publicUrl}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleCopyLink}
+        className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+      >
+        {linkCopied ? '✓ Link copied' : 'Copy link'}
+      </button>
+
+      <a
+        href={publicUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="rounded-lg border border-border px-4 py-2.5 text-center text-sm font-medium text-ink transition hover:border-accent-soft"
+      >
+        Open
+      </a>
+    </div>
+  </div>
+) : null}
 
         <form onSubmit={handleSave} className="mt-8 space-y-6">
           <div>
