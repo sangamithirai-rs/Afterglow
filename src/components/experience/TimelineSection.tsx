@@ -8,20 +8,33 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
   const [entryDate, setEntryDate] = useState('')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim()) {
+  setError('Enter what happened.')
+  return
+}
 
     setSaving(true)
-    await supabase.from('timeline_entries').insert({
+    setError(null)
+
+    const { error: insertError } = await supabase.from('timeline_entries').insert({
       experience_id: experienceId,
       title: title.trim(),
       entry_date: entryDate || null,
       note: note.trim() || null,
       position: entries.length,
     })
+
     setSaving(false)
+
+    if (insertError) {
+      setError('Could not add entry: ' + insertError.message)
+      return
+    }
+
     setTitle('')
     setEntryDate('')
     setNote('')
@@ -29,7 +42,12 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
   }
 
   async function handleDelete(entryId: string) {
-    await supabase.from('timeline_entries').delete().eq('id', entryId)
+    setError(null)
+    const { error: deleteError } = await supabase.from('timeline_entries').delete().eq('id', entryId)
+    if (deleteError) {
+      setError('Could not remove entry: ' + deleteError.message)
+      return
+    }
     refetch()
   }
 
@@ -69,6 +87,8 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
           Add entry
         </button>
       </form>
+
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading timeline...</p>

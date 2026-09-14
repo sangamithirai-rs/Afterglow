@@ -60,10 +60,15 @@ export function PhotoGallerySection({ experienceId }: { experienceId: string }) 
     refetch()
   }
 
-  async function handleDelete(photoId: string) {
-    await supabase.from('photos').delete().eq('id', photoId)
+ async function handleDelete(photoId: string) {
+    setError(null)
+    const { error: deleteError } = await supabase.from('photos').delete().eq('id', photoId)
+    if (deleteError) {
+      setError('Could not remove photo: ' + deleteError.message)
+      return
+    }
     refetch()
-  }
+}
 
   return (
     <div>

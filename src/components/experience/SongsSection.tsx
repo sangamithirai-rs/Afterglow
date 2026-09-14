@@ -7,26 +7,44 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
-    if (!title.trim()) return
+   if (!title.trim()) {
+  setError('Enter a song title.')
+  return
+}
 
     setSaving(true)
-    await supabase.from('songs').insert({
+    setError(null)
+
+    const { error: insertError } = await supabase.from('songs').insert({
       experience_id: experienceId,
       title: title.trim(),
       artist: artist.trim() || null,
       position: songs.length,
     })
+
     setSaving(false)
+
+    if (insertError) {
+      setError('Could not add song: ' + insertError.message)
+      return
+    }
+
     setTitle('')
     setArtist('')
     refetch()
   }
 
   async function handleDelete(songId: string) {
-    await supabase.from('songs').delete().eq('id', songId)
+    setError(null)
+    const { error: deleteError } = await supabase.from('songs').delete().eq('id', songId)
+    if (deleteError) {
+      setError('Could not remove song: ' + deleteError.message)
+      return
+    }
     refetch()
   }
 
@@ -58,6 +76,8 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
           Add
         </button>
       </form>
+
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading songs...</p>

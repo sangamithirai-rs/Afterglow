@@ -7,25 +7,43 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
   const [name, setName] = useState('')
   const [relationship, setRelationship] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
+   if (!name.trim()) {
+  setError('Enter a name.')
+  return
+}
 
     setSaving(true)
-    await supabase.from('people').insert({
+    setError(null)
+
+    const { error: insertError } = await supabase.from('people').insert({
       experience_id: experienceId,
       name: name.trim(),
       relationship: relationship.trim() || null,
     })
+
     setSaving(false)
+
+    if (insertError) {
+      setError('Could not add person: ' + insertError.message)
+      return
+    }
+
     setName('')
     setRelationship('')
     refetch()
   }
 
   async function handleDelete(personId: string) {
-    await supabase.from('people').delete().eq('id', personId)
+    setError(null)
+    const { error: deleteError } = await supabase.from('people').delete().eq('id', personId)
+    if (deleteError) {
+      setError('Could not remove person: ' + deleteError.message)
+      return
+    }
     refetch()
   }
 
@@ -34,7 +52,7 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
       <h2 className="font-serif text-xl font-medium text-ink">People</h2>
       <p className="mt-1 text-sm text-ink-soft">Who was there.</p>
 
-      <form onSubmit={handleAdd} className="mt-3 flex flex-wrap gap-2">
+      <form onSubmit={handleAdd} className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           value={name}
@@ -57,6 +75,8 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
           Add
         </button>
       </form>
+
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading people...</p>

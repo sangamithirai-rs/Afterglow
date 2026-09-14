@@ -4,12 +4,14 @@ import { DashboardPage } from './pages/DashboardPage'
 import { CreateExperiencePage } from './pages/CreateExperiencePage'
 import { EditExperiencePage } from './pages/EditExperiencePage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/not-found" element={<NotFoundPage />} />
         <Route
           path="/dashboard"
           element={

@@ -34,14 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
+ async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     })
-  }
+    if (error) {
+      console.error('Google sign-in failed:', error.message)
+      alert('Sign-in failed: ' + error.message)
+    }
+}
 
   async function signOut() {
     await supabase.auth.signOut()
