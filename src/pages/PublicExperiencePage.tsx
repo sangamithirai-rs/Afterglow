@@ -18,6 +18,7 @@ export function PublicExperiencePage() {
   const { data, loading, error } = usePublicExperience(slug, authLoading)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
   const [replayOpen, setReplayOpen] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   useEffect(() => {
     if (selectedPhotoIndex === null || !data?.photos.length) return
 
@@ -70,7 +71,34 @@ export function PublicExperiencePage() {
   }
 
   const { experience, photos, songs, timelineEntries, people } = data
+  async function handleShare() {
+  const url = window.location.href
 
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: experience.title,
+        text: 'A memory worth keeping.',
+        url,
+      })
+    } catch {
+      // User cancelled the share sheet.
+    }
+
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(url)
+    setShareCopied(true)
+
+    window.setTimeout(() => {
+      setShareCopied(false)
+    }, 2000)
+  } catch {
+    // Clipboard unavailable.
+  }
+}
   return (
     <div className="min-h-screen bg-bg">
       {/* Hero */}
@@ -278,7 +306,32 @@ export function PublicExperiencePage() {
             </ul>
           </section>
         )}
+        {/* Share */}
+<section className="mt-20 border-t border-border pt-10 text-center sm:mt-24">
+  <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+    Keep the memory close
+  </p>
 
+  <h2 className="mt-3 font-serif text-3xl font-medium text-ink">
+    Share this memory
+  </h2>
+
+  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-ink-soft">
+    Let someone else relive this moment with you.
+  </p>
+
+  <button
+    type="button"
+    onClick={handleShare}
+    className="mt-6 rounded-full border border-border bg-surface px-6 py-3 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface/80"
+  >
+    {shareCopied ? '✓ Link copied' : 'Share this memory'}
+  </button>
+
+  <p className="mt-4 text-xs text-ink-soft">
+    Anyone with the link can view this experience.
+  </p>
+</section>
        
       </div>
 
