@@ -6,32 +6,70 @@ export function Navbar() {
   const { user, signOut } = useAuth()
 
   return (
-    <nav className="flex items-center justify-between px-6 py-5 md:px-12">
-      <Link to="/" className="font-serif text-2xl font-medium text-ink">
-        Afterglow
-      </Link>
-      <div className="flex items-center gap-5">
-        <a href="#explore" className="hidden text-sm font-medium text-ink-soft hover:text-ink sm:block">
-          Explore
-        </a>
-        <ThemeToggle />
-        {user && (
-  <div className="flex items-center gap-3">
-    <Link
-      to="/dashboard"
-      className="hidden text-sm font-medium text-ink-soft hover:text-ink sm:block"
-    >
-      My Afterglows
-    </Link>
-    <button
-      type="button"
-      onClick={signOut}
-      className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft"
-    >
-      Sign out
-    </button>
-  </div>
-)}
+    <nav className="w-full px-5 py-5 sm:px-6 md:px-12 md:py-6">
+      <div className="flex items-center justify-between">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="font-serif text-2xl font-medium text-ink"
+        >
+          Afterglow
+        </Link>
+
+        {/* Desktop navigation */}
+        <div className="hidden items-center gap-6 md:flex">
+          <a
+            href="#explore"
+            className="text-sm font-medium text-ink-soft transition hover:text-ink"
+          >
+            Explore
+          </a>
+
+          <ThemeToggle />
+
+          {user && (
+            <>
+              <Link
+                to="/dashboard"
+                className="text-sm font-medium text-ink-soft transition hover:text-ink"
+              >
+                My Afterglows
+              </Link>
+
+              <button
+                type="button"
+                onClick={signOut}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft"
+              >
+                Sign out
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Mobile navigation */}
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+
+          {user && (
+            <>
+              <Link
+                to="/dashboard"
+                className="rounded-full px-3 py-2 text-xs font-medium text-ink-soft transition hover:bg-surface hover:text-ink"
+              >
+                My Afterglows
+              </Link>
+
+              <button
+                type="button"
+                onClick={signOut}
+                className="rounded-full border border-border px-3 py-2 text-xs font-medium text-ink transition hover:border-accent-soft"
+              >
+                Sign out
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   )

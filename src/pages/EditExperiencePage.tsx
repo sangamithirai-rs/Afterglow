@@ -21,6 +21,7 @@ export function EditExperiencePage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const navigate = useNavigate()
+
   const {
     experience,
     loading: loadingExperience,
@@ -36,9 +37,11 @@ export function EditExperiencePage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
   const [visibility, setVisibility] = useState<
     'private' | 'unlisted' | 'invite_only'
   >('private')
+
   const [linkCopied, setLinkCopied] = useState(false)
 
   useEffect(() => {
@@ -64,6 +67,7 @@ export function EditExperiencePage() {
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+
     if (!file) return
 
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -105,10 +109,12 @@ export function EditExperiencePage() {
   async function handleCopyLink() {
     if (!experience?.share_slug) return
 
-    const url = `${window.location.origin}/experience/${experience.share_slug}`
+    const url =
+      `${window.location.origin}/experience/${experience.share_slug}`
 
     try {
       await navigator.clipboard.writeText(url)
+
       setLinkCopied(true)
 
       window.setTimeout(() => {
@@ -153,7 +159,9 @@ export function EditExperiencePage() {
 
       navigate('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(
+        err instanceof Error ? err.message : 'Something went wrong.'
+      )
     } finally {
       setSaving(false)
     }
@@ -233,8 +241,11 @@ export function EditExperiencePage() {
     return (
       <div className="min-h-screen bg-bg">
         <Navbar />
-        <main className="mx-auto max-w-5xl px-6 py-16">
-          <p className="text-ink-soft">Loading experience...</p>
+
+        <main className="mx-auto max-w-4xl px-6 py-16">
+          <p className="text-sm text-ink-soft">
+            Loading experience...
+          </p>
         </main>
       </div>
     )
@@ -244,12 +255,14 @@ export function EditExperiencePage() {
     return (
       <div className="min-h-screen bg-bg">
         <Navbar />
-        <main className="mx-auto max-w-5xl px-6 py-16">
-          <div className="rounded-2xl border border-border bg-surface p-8">
-            <p className="font-serif text-2xl text-ink">
+
+        <main className="mx-auto max-w-4xl px-6 py-16">
+          <div className="border-t border-border pt-8">
+            <p className="font-serif text-3xl text-ink">
               Could not load this experience
             </p>
-            <p className="mt-2 text-sm text-red-500">
+
+            <p className="mt-3 text-sm text-red-500">
               It may not exist, or you may not have access to it.
             </p>
           </div>
@@ -259,153 +272,161 @@ export function EditExperiencePage() {
   }
 
   const publicUrl =
-    window.location.origin + '/experience/' + experience.share_slug
+    window.location.origin +
+    '/experience/' +
+    experience.share_slug
 
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
 
-      <main className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
+      <main className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
+
         {/* Header */}
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-              Your memory
+        <header className="border-b border-border pb-10">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="text-xs font-medium uppercase tracking-[0.18em] text-ink-soft transition hover:text-ink"
+          >
+            ← Back to memories
+          </button>
+
+          <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-accent">
+                Afterglow
+              </p>
+
+              <h1 className="mt-3 font-serif text-4xl font-medium leading-tight text-ink sm:text-5xl">
+                Edit experience
+              </h1>
+
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
+                Shape the details and keep the moments that matter.
+              </p>
+            </div>
+
+            <span className="w-fit rounded-full bg-ink-soft/10 px-3 py-1.5 text-xs font-medium capitalize text-ink-soft">
+              {experience.status}
+            </span>
+          </div>
+
+          {/* Existing share controls */}
+          {experience.status === 'published' &&
+          experience.share_slug ? (
+            <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-[0.16em] text-ink-soft">
+                  Published experience
+                </p>
+
+                <p className="mt-1 truncate text-sm text-ink">
+                  {publicUrl}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-surface"
+                >
+                  {linkCopied ? '✓ Copied' : 'Copy link'}
+                </button>
+
+                <a
+                  href={publicUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-surface"
+                >
+                  Open
+                </a>
+              </div>
+            </div>
+          ) : null}
+        </header>
+
+        {/* 01 — THE MEMORY */}
+        <section className="py-14 sm:py-16">
+          <div className="mb-10">
+            <p className="text-xs font-medium tracking-[0.22em] text-accent">
+              01
             </p>
 
-            <h1 className="mt-2 font-serif text-4xl font-medium text-ink sm:text-5xl">
-              Edit experience
-            </h1>
+            <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
+              The memory
+            </h2>
 
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Shape the details, collect the moments, and decide who gets to
-              relive them.
+            <p className="mt-2 text-sm text-ink-soft">
+              Start with the details that set the scene.
             </p>
           </div>
 
-          <span className="w-fit rounded-full bg-ink-soft/10 px-3 py-1 text-xs font-medium capitalize text-ink-soft">
-            {experience.status}
-          </span>
-        </header>
+          <form onSubmit={handleSave}>
 
-        {/* Share card */}
-        {experience.status === 'published' && experience.share_slug ? (
-          <section className="mt-10 rounded-2xl border border-border bg-surface p-6 sm:p-7">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-                  Sharing
-                </p>
+            {/* Cover */}
+            <div>
+              <div className="flex items-end justify-between">
+                <div>
+                  <label className="text-sm font-medium text-ink">
+                    Cover image
+                  </label>
 
-                <h2 className="mt-2 font-serif text-2xl text-ink">
-                  Share this experience
-                </h2>
-
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-                  {visibility === 'unlisted'
-                    ? 'Anyone with this link can view it. It will not appear in other users’ dashboards.'
-                    : visibility === 'invite_only'
-                      ? 'Only people you invite can view this experience.'
-                      : 'This experience is private and cannot be viewed through this link.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <div className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-4 py-3">
-                <p className="truncate text-sm text-ink-soft">{publicUrl}</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="rounded-xl bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-accent-soft"
-              >
-                {linkCopied ? '✓ Link copied' : 'Copy link'}
-              </button>
-
-              <a
-                href={publicUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-xl border border-border px-5 py-3 text-center text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-bg"
-              >
-                Open
-              </a>
-            </div>
-          </section>
-        ) : null}
-
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
-          {/* Main details */}
-          <section className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
-            <div className="mb-8">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-                Details
-              </p>
-
-              <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
-                Experience details
-              </h2>
-
-              <p className="mt-2 text-sm text-ink-soft">
-                Start with the details that set the scene.
-              </p>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-7">
-              {/* Cover */}
-              <div>
-                <label className="block text-sm font-medium text-ink">
-                  Cover image
-                </label>
-
-                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex h-40 w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-bg sm:h-32 sm:w-48">
-                    {coverPreview || coverImageUrl ? (
-                      <img
-                        src={coverPreview ?? coverImageUrl ?? ''}
-                        alt="Cover preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center">
-                        <p className="text-sm text-ink-soft">No image</p>
-                        <p className="mt-1 text-xs text-ink-soft/70">
-                          JPG, PNG or WebP
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <input
-                      id="cover-image"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="sr-only"
-                    />
-
-                    <label
-                      htmlFor="cover-image"
-                      className="inline-flex cursor-pointer rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft"
-                    >
-                      Choose image
-                    </label>
-
-                    <p className="mt-2 text-xs text-ink-soft">
-                      Maximum 5MB
-                    </p>
-                  </div>
+                  <p className="mt-1 text-xs text-ink-soft">
+                    This becomes the visual introduction to your memory.
+                  </p>
                 </div>
               </div>
 
-              {/* Title */}
+              <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
+                <div className="aspect-[16/7] w-full">
+                  {coverPreview || coverImageUrl ? (
+                    <img
+                      src={coverPreview ?? coverImageUrl ?? ''}
+                      alt="Cover preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-surface">
+                      <p className="text-sm text-ink-soft">
+                        No cover image
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border px-4 py-3">
+                  <p className="text-xs text-ink-soft">
+                    JPG, PNG or WebP · Max 5MB
+                  </p>
+
+                  <input
+                    id="cover-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+
+                  <label
+                    htmlFor="cover-image"
+                    className="cursor-pointer rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-bg"
+                  >
+                    Change cover
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Fields */}
+            <div className="mt-10 space-y-8">
+
               <div>
                 <label
                   htmlFor="title"
-                  className="block text-sm font-medium text-ink"
+                  className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
                 >
                   Title
                 </label>
@@ -416,16 +437,15 @@ export function EditExperiencePage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Give this memory a name"
-                  className="mt-2 w-full rounded-xl border border-border bg-bg px-4 py-3 text-ink placeholder:text-ink-soft/60 focus:border-accent-soft focus:outline-none"
+                  className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-2xl font-serif text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none sm:text-3xl"
                 />
               </div>
 
-              {/* Location + Date */}
-              <div className="grid gap-7 sm:grid-cols-2">
+              <div className="grid gap-8 sm:grid-cols-2">
                 <div>
                   <label
                     htmlFor="location"
-                    className="block text-sm font-medium text-ink"
+                    className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
                   >
                     Location
                   </label>
@@ -436,14 +456,14 @@ export function EditExperiencePage() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Where did it happen?"
-                    className="mt-2 w-full rounded-xl border border-border bg-bg px-4 py-3 text-ink placeholder:text-ink-soft/60 focus:border-accent-soft focus:outline-none"
+                    className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-base text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="eventDate"
-                    className="block text-sm font-medium text-ink"
+                    className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
                   >
                     Date
                   </label>
@@ -451,18 +471,17 @@ export function EditExperiencePage() {
                   <input
                     id="eventDate"
                     type="date"
-                    value={eventDate ?? ''}
+                    value={eventDate}
                     onChange={(e) => setEventDate(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-border bg-bg px-4 py-3 text-ink focus:border-accent-soft focus:outline-none"
+                    className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-base text-ink focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Description */}
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-ink"
+                  className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
                 >
                   Description
                 </label>
@@ -473,160 +492,275 @@ export function EditExperiencePage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What makes this moment worth remembering?"
                   rows={6}
-                  className="mt-2 w-full resize-y rounded-xl border border-border bg-bg px-4 py-3 text-ink placeholder:text-ink-soft/60 focus:border-accent-soft focus:outline-none"
+                  className="mt-3 w-full resize-y border-b border-border bg-transparent px-0 py-3 text-base leading-relaxed text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none"
                 />
               </div>
-
-              {error ? (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-                  <p className="text-sm text-red-500">{error}</p>
-                </div>
-              ) : null}
-
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-full bg-accent px-6 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Save changes'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleTogglePublish}
-                  disabled={saving}
-                  className="rounded-full border border-border px-6 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50"
-                >
-                  {experience.status === 'published'
-                    ? 'Unpublish'
-                    : 'Publish'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="ml-auto rounded-full px-5 py-3 text-sm font-medium text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"
-                >
-                  Delete
-                </button>
-              </div>
-            </form>
-          </section>
-
-          {/* Visibility */}
-          <aside className="h-fit rounded-2xl border border-border bg-surface p-6 lg:sticky lg:top-24">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-              Privacy
-            </p>
-
-            <h2 className="mt-2 font-serif text-2xl font-medium text-ink">
-              Who can see it?
-            </h2>
-
-            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-              Choose who can access this memory once it is published.
-            </p>
-
-            <label
-              htmlFor="visibility"
-              className="mt-6 block text-sm font-medium text-ink"
-            >
-              Visibility
-            </label>
-
-            <select
-              id="visibility"
-              value={visibility}
-              onChange={(e) =>
-                handleVisibilityChange(
-                  e.target.value as
-                    | 'private'
-                    | 'unlisted'
-                    | 'invite_only'
-                )
-              }
-              className="mt-2 w-full rounded-xl border border-border bg-bg px-4 py-3 text-ink focus:border-accent-soft focus:outline-none"
-            >
-              <option value="private">Only me</option>
-              <option value="unlisted">Anyone with the link</option>
-              <option value="invite_only">Only people I invite</option>
-            </select>
-
-            <div className="mt-5 rounded-xl bg-bg p-4">
-              <p className="text-sm font-medium text-ink">
-                {visibility === 'private'
-                  ? '🔒 Private'
-                  : visibility === 'unlisted'
-                    ? '🔗 Link sharing'
-                    : '✉️ Invite only'}
-              </p>
-
-              <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                {visibility === 'private'
-                  ? 'Only you can access this experience.'
-                  : visibility === 'unlisted'
-                    ? 'Anyone who has the link can access it.'
-                    : 'Only invited email addresses can access it.'}
-              </p>
             </div>
+          </form>
+        </section>
 
-            {visibility === 'invite_only' ? (
-              <div className="mt-6 border-t border-border pt-6">
-                <InviteSection experienceId={experience.id} />
-              </div>
-            ) : null}
-          </aside>
-        </div>
-
-        {/* Memory building sections */}
-        <section className="mt-10">
-          <div className="mb-8">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-              Build the memory
+        {/* 02 — THE MOMENTS */}
+        <section className="border-t border-border py-14 sm:py-16">
+          <div className="mb-10">
+            <p className="text-xs font-medium tracking-[0.22em] text-accent">
+              02
             </p>
 
             <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
-              The moments inside it
+              The moments
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-              Add photos, songs, timeline moments, and the people who made the
-              experience meaningful.
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+              Build the story with the photos, sounds, people, and moments
+              that belong to it.
             </p>
           </div>
 
-          <div className="space-y-8">
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+          <div className="space-y-16">
+
+            {/* Photos */}
+            <div>
+              <div className="mb-5">
+                <h3 className="font-serif text-2xl text-ink">
+                  Photos
+                </h3>
+
+                <p className="mt-1 text-sm text-ink-soft">
+                  A collection of moments captured along the way.
+                </p>
+              </div>
+
               <PhotoGallerySection experienceId={experience.id} />
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+            {/* Songs */}
+            <div className="border-t border-border pt-12">
+              <div className="mb-5">
+                <h3 className="font-serif text-2xl text-ink">
+                  Songs
+                </h3>
+
+                <p className="mt-1 text-sm text-ink-soft">
+                  The soundtrack of the memory.
+                </p>
+              </div>
+
               <SongsSection experienceId={experience.id} />
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+            {/* Timeline */}
+            <div className="border-t border-border pt-12">
+              <div className="mb-5">
+                <h3 className="font-serif text-2xl text-ink">
+                  Timeline
+                </h3>
+
+                <p className="mt-1 text-sm text-ink-soft">
+                  How the day or trip unfolded.
+                </p>
+              </div>
+
               <TimelineSection experienceId={experience.id} />
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+            {/* People */}
+            <div className="border-t border-border pt-12">
+              <div className="mb-5">
+                <h3 className="font-serif text-2xl text-ink">
+                  People
+                </h3>
+
+                <p className="mt-1 text-sm text-ink-soft">
+                  The people who were there.
+                </p>
+              </div>
+
               <PeopleSection experienceId={experience.id} />
             </div>
           </div>
         </section>
 
+        {/* 03 — SHARING */}
+        <section className="border-t border-border py-14 sm:py-16">
+          <div className="mb-10">
+            <p className="text-xs font-medium tracking-[0.22em] text-accent">
+              03
+            </p>
+
+            <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
+              Sharing
+            </h2>
+
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+              Decide who can relive this memory once it is published.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+
+            {/* Private */}
+            <label
+              className={`block cursor-pointer border px-5 py-5 transition ${
+                visibility === 'private'
+                  ? 'border-accent bg-surface'
+                  : 'border-border hover:border-accent-soft'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  checked={visibility === 'private'}
+                  onChange={() => handleVisibilityChange('private')}
+                  className="mt-1"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-ink">
+                    Only me
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                    Only you can view this experience.
+                  </p>
+                </div>
+              </div>
+            </label>
+
+            {/* Unlisted */}
+            <label
+              className={`block cursor-pointer border px-5 py-5 transition ${
+                visibility === 'unlisted'
+                  ? 'border-accent bg-surface'
+                  : 'border-border hover:border-accent-soft'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="unlisted"
+                  checked={visibility === 'unlisted'}
+                  onChange={() => handleVisibilityChange('unlisted')}
+                  className="mt-1"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-ink">
+                    Anyone with the link
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                    Anyone who has the link can view it. It will not appear
+                    in other users’ dashboards.
+                  </p>
+                </div>
+              </div>
+            </label>
+
+            {/* Invite only */}
+            <label
+              className={`block cursor-pointer border px-5 py-5 transition ${
+                visibility === 'invite_only'
+                  ? 'border-accent bg-surface'
+                  : 'border-border hover:border-accent-soft'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="invite_only"
+                  checked={visibility === 'invite_only'}
+                  onChange={() =>
+                    handleVisibilityChange('invite_only')
+                  }
+                  className="mt-1"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-ink">
+                    Only people I invite
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                    Only invited people can view this experience.
+                  </p>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {visibility === 'invite_only' ? (
+            <div className="mt-8 border-t border-border pt-8">
+              <InviteSection experienceId={experience.id} />
+            </div>
+          ) : null}
+        </section>
+
+        {/* ACTIONS */}
+        <section className="border-t border-border py-12">
+          {error ? (
+            <div className="mb-6 border-l-2 border-red-500 px-4 py-2">
+              <p className="text-sm text-red-500">{error}</p>
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={(e) => {
+                const form = e.currentTarget
+                  .closest('main')
+                  ?.querySelector('form')
+
+                if (form) {
+                  form.requestSubmit()
+                }
+              }}
+              className="rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save changes'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTogglePublish}
+              disabled={saving}
+              className="rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50"
+            >
+              {experience.status === 'published'
+                ? 'Unpublish'
+                : 'Publish'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={saving}
+              className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
+            >
+              Delete experience
+            </button>
+          </div>
+
+          <p className="mt-5 text-xs leading-relaxed text-ink-soft">
+            Save your changes before leaving this page.
+          </p>
+        </section>
+
         {/* Closing */}
-        <div className="mt-16 border-t border-border pt-10 text-center">
+        <footer className="border-t border-border py-12 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">
             Afterglow
           </p>
 
-          <p className="mx-auto mt-3 max-w-lg font-serif text-2xl italic text-ink">
-            Some moments deserve to stay.
+          <p className="mt-3 font-serif text-xl italic text-ink-soft">
+            A memory worth keeping.
           </p>
-        </div>
+        </footer>
       </main>
     </div>
   )
