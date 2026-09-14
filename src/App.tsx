@@ -3,6 +3,7 @@ import { LandingPage } from './pages/LandingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CreateExperiencePage } from './pages/CreateExperiencePage'
 import { EditExperiencePage } from './pages/EditExperiencePage'
+import { PublicExperiencePage } from './pages/PublicExperiencePage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { NotFoundPage } from './pages/NotFoundPage'
 
@@ -36,6 +37,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/experience/:slug" element={<PublicExperiencePage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

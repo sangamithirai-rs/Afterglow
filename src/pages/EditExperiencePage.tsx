@@ -32,8 +32,7 @@ export function EditExperiencePage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [visibility, setVisibility] = useState<'private' | 'invite_only'>('private')
-
+  const [visibility, setVisibility] = useState<'private' | 'unlisted' | 'invite_only'>('private')
   useEffect(() => {
     if (!experience) return
     setTitle(experience.title)
@@ -41,7 +40,7 @@ export function EditExperiencePage() {
     setEventDate(experience.event_date ?? '')
     setDescription(experience.description ?? '')
     setCoverImageUrl(experience.cover_image_url)
-    setVisibility(experience.visibility as 'private' | 'invite_only')
+    setVisibility(experience.visibility as 'private' | 'unlisted' | 'invite_only')
   }, [experience])
 
   useEffect(() => {
@@ -122,7 +121,9 @@ export function EditExperiencePage() {
     }
   }
 
-  async function handleVisibilityChange(newVisibility: 'private' | 'invite_only') {
+ async function handleVisibilityChange(
+  newVisibility: 'private' | 'unlisted' | 'invite_only'
+) {
     if (!id) return
     setVisibility(newVisibility)
 
@@ -323,15 +324,20 @@ export function EditExperiencePage() {
           <label htmlFor="visibility" className="block text-sm font-medium text-ink">
             Who can see this once published
           </label>
-          <select
-            id="visibility"
-            value={visibility}
-            onChange={(e) => handleVisibilityChange(e.target.value as 'private' | 'invite_only')}
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
-          >
-            <option value="private">Only me</option>
-            <option value="invite_only">Only people I invite</option>
-          </select>
+         <select
+  id="visibility"
+  value={visibility}
+  onChange={(e) =>
+    handleVisibilityChange(
+      e.target.value as 'private' | 'unlisted' | 'invite_only'
+    )
+  }
+  className="mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-ink focus:border-accent-soft focus:outline-none"
+>
+ <option value="private">Only me</option>
+<option value="unlisted">Anyone with the link</option>
+<option value="invite_only">Only people I invite</option>
+</select>
 
           {visibility === 'invite_only' ? <InviteSection experienceId={experience.id} /> : null}
         </div>
