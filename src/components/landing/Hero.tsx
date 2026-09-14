@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext'
 
 export function Hero() {
-  const { signInWithGoogle } = useAuth()
+  const { user, signInWithGoogle } = useAuth()
 
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-16 text-center md:pb-32 md:pt-24">
@@ -17,13 +17,15 @@ export function Hero() {
         experiences you can revisit, and share the ones you want the world to see.
       </p>
       <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-        <button
-          type="button"
-          onClick={signInWithGoogle}
-          className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
-        >
-          Sign in with Google
-        </button>
+        {!user && (
+  <button
+    type="button"
+    onClick={signInWithGoogle}
+    className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+  >
+    Sign in with Google
+  </button>
+)}
         <a href="#explore" className="rounded-full border border-border px-8 py-3.5 text-sm font-medium text-ink transition hover:border-accent-soft">
           Explore public experiences
         </a>
