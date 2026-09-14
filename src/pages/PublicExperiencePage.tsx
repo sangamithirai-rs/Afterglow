@@ -72,26 +72,52 @@ export function PublicExperiencePage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* Cover */}
-      <div className="relative flex h-[50vh] min-h-[280px] items-end overflow-hidden sm:h-[60vh]">
-        {experience.cover_image_url ? (
-          <img
-            src={experience.cover_image_url}
-            alt={experience.title}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--accent-soft)_0%,var(--bg)_70%)] opacity-30" />
+      {/* Hero */}
+<section className="relative min-h-[78vh] overflow-hidden">
+  {experience.cover_image_url ? (
+    <img
+      src={experience.cover_image_url}
+      alt={experience.title}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  ) : (
+    <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--accent-soft)_0%,var(--bg)_55%,var(--surface)_100%)]" />
+  )}
+
+  {/* Cinematic overlay */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/20 to-black/80" />
+
+  {/* Hero content */}
+  <div className="relative z-10 flex min-h-[78vh] items-end">
+    <div className="w-full px-6 pb-12 sm:px-10 sm:pb-16 md:px-16 md:pb-20">
+      <div className="mx-auto max-w-5xl">
+        {(experience.event_date || experience.location) && (
+          <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-white/70 sm:text-sm">
+            {experience.event_date}
+            {experience.event_date && experience.location && '  ·  '}
+            {experience.location}
+          </p>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <h1 className="max-w-4xl font-serif text-4xl font-medium leading-[1.05] text-white sm:text-5xl md:text-7xl lg:text-8xl">
+          {experience.title}
+        </h1>
 
-        <div className="relative z-10 px-6 pb-8 sm:pb-10 md:px-16">
-          <h1 className="font-serif text-3xl font-medium text-white sm:text-4xl md:text-6xl">
-            {experience.title}
-          </h1>
+        {experience.description && (
+          <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-white/80 sm:text-xl md:text-2xl">
+            &ldquo;{experience.description}&rdquo;
+          </p>
+        )}
+
+        <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/60">
+          <span>Afterglow</span>
+          <span className="h-px w-8 bg-white/30" />
+          <span>A memory worth keeping</span>
         </div>
       </div>
+    </div>
+  </div>
+</section>
 
       {/* Content */}
       <div className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
@@ -104,30 +130,63 @@ export function PublicExperiencePage() {
         )}
 
         {/* Photos */}
-        {photos.length > 0 && (
-          <section className="mt-12 sm:mt-16">
-            <h2 className="mb-6 font-serif text-2xl font-medium text-ink">
-              Photos
-            </h2>
+{photos.length > 0 && (
+  <section className="mt-16 sm:mt-24">
+    <div className="mb-7 flex items-end justify-between">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+          Memories
+        </p>
+        <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
+          Moments worth keeping
+        </h2>
+      </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {photos.map((photo, index) => (
-                <button
-                  key={photo.id}
-                  type="button"
-                  onClick={() => setSelectedPhotoIndex(index)}
-                  className="group aspect-square overflow-hidden rounded-lg border border-border text-left"
-                >
-                  <img
-                    src={photo.storage_path}
-                    alt={photo.caption ?? ''}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                  />
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+      <p className="hidden text-sm text-ink-soft sm:block">
+        {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+      </p>
+    </div>
+
+    <div className="grid gap-3 sm:grid-cols-2">
+      {photos.slice(0, 5).map((photo, index) => (
+        <button
+          key={photo.id}
+          type="button"
+          onClick={() => setSelectedPhotoIndex(index)}
+          className={`group relative overflow-hidden rounded-xl border border-border bg-surface text-left ${
+            index === 0 && photos.length > 1
+              ? 'sm:row-span-2 sm:aspect-[4/5]'
+              : 'aspect-[4/3]'
+          }`}
+        >
+          <img
+            src={photo.storage_path}
+            alt={photo.caption ?? ''}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+
+          {photo.caption && (
+            <p className="absolute bottom-4 left-4 right-4 translate-y-2 text-sm text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              {photo.caption}
+            </p>
+          )}
+        </button>
+      ))}
+    </div>
+
+    {photos.length > 5 && (
+      <button
+        type="button"
+       onClick={() => setSelectedPhotoIndex(0)}
+        className="mt-3 w-full rounded-xl border border-border bg-surface py-3 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface/80"
+      >
+        View all {photos.length} photos
+      </button>
+    )}
+  </section>
+)}
 
         {/* Timeline */}
         {timelineEntries.length > 0 && (
@@ -211,14 +270,7 @@ export function PublicExperiencePage() {
           </section>
         )}
 
-        {/* Description */}
-        {experience.description && (
-          <section className="mt-12 border-t border-border pt-10 text-center sm:mt-16 sm:pt-12">
-            <p className="font-serif text-lg italic leading-relaxed text-ink-soft sm:text-xl">
-              &ldquo;{experience.description}&rdquo;
-            </p>
-          </section>
-        )}
+       
       </div>
 
       {/* Fullscreen Photo Viewer */}
