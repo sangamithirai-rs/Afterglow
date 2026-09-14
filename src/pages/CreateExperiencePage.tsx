@@ -298,7 +298,7 @@ export function CreateExperiencePage() {
               </p>
 
               <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
-                <div className="aspect-[4/3] w-full sm:aspect-[16/7]">
+                <div className="aspect-square w-full">
                   {coverPreview ? (
                     <img
                       src={coverPreview}

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import Cropper, { type Area } from 'react-easy-crop'
 import { Navbar } from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 import { useExperience } from '../hooks/useExperience'
@@ -15,6 +16,60 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 function generateSlug() {
   return crypto.randomUUID().split('-')[0]
+}
+
+function createCroppedImage(
+  imageSrc: string,
+  crop: Area,
+  outputSize = 1200,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = outputSize
+      canvas.height = outputSize
+
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        reject(new Error('Could not create image canvas.'))
+        return
+      }
+
+      ctx.drawImage(
+        image,
+        crop.x,
+        crop.y,
+        crop.width,
+        crop.height,
+        0,
+        0,
+        outputSize,
+        outputSize,
+      )
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Could not create cropped image.'))
+            return
+          }
+
+          resolve(blob)
+        },
+        'image/jpeg',
+        0.92,
+      )
+    }
+
+    image.onerror = () => {
+      reject(new Error('Could not load image.'))
+    }
+
+    image.src = imageSrc
+  })
 }
 
 export function EditExperiencePage() {
@@ -35,6 +90,14 @@ export function EditExperiencePage() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+
+  const [cropImage, setCropImage] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(
+    null,
+  )
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,20 +107,20 @@ export function EditExperiencePage() {
 
   const [linkCopied, setLinkCopied] = useState(false)
 
-/* eslint-disable react-hooks/set-state-in-effect */
-useEffect(() => {
-  if (!experience) return
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!experience) return
 
-  setTitle(experience.title)
-  setLocation(experience.location ?? '')
-  setEventDate(experience.event_date ?? '')
-  setDescription(experience.description ?? '')
-  setCoverImageUrl(experience.cover_image_url)
-  setVisibility(
-    experience.visibility as 'private' | 'unlisted' | 'invite_only'
-  )
-}, [experience])
-/* eslint-enable react-hooks/set-state-in-effect */
+    setTitle(experience.title)
+    setLocation(experience.location ?? '')
+    setEventDate(experience.event_date ?? '')
+    setDescription(experience.description ?? '')
+    setCoverImageUrl(experience.cover_image_url)
+    setVisibility(
+      experience.visibility as 'private' | 'unlisted' | 'invite_only',
+    )
+  }, [experience])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     return () => {
@@ -74,28 +137,90 @@ useEffect(() => {
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError('Please upload a JPEG, PNG, or WebP image.')
+      e.target.value = ''
       return
     }
 
     if (file.size > MAX_FILE_SIZE) {
       setError('Image must be smaller than 5MB.')
+      e.target.value = ''
       return
     }
 
     setError(null)
-    setCoverFile(file)
-    setCoverPreview(URL.createObjectURL(file))
+
+    const imageUrl = URL.createObjectURL(file)
+
+    setCropImage(imageUrl)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
+
+    e.target.value = ''
+  }
+
+  function handleCropComplete(_: Area, croppedPixels: Area) {
+    setCroppedAreaPixels(croppedPixels)
+  }
+
+  async function handleApplyCrop() {
+    if (!cropImage || !croppedAreaPixels) return
+
+    try {
+      const croppedBlob = await createCroppedImage(
+        cropImage,
+        croppedAreaPixels,
+      )
+
+      const croppedFile = new File(
+        [croppedBlob],
+        'afterglow-cover.jpg',
+        {
+          type: 'image/jpeg',
+        },
+      )
+
+      const newPreviewUrl = URL.createObjectURL(croppedBlob)
+
+      if (coverPreview) {
+        URL.revokeObjectURL(coverPreview)
+      }
+
+      setCoverFile(croppedFile)
+      setCoverPreview(newPreviewUrl)
+
+      URL.revokeObjectURL(cropImage)
+
+      setCropImage(null)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
+    } catch {
+      setError('Could not crop the image. Please try again.')
+    }
+  }
+
+  function handleCancelCrop() {
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage)
+    }
+
+    setCropImage(null)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
   }
 
   async function uploadNewCoverIfNeeded() {
     if (!coverFile || !user) return coverImageUrl
 
-    const fileExt = coverFile.name.split('.').pop()
-    const filePath = user.id + '/' + crypto.randomUUID() + '.' + fileExt
+    const filePath = user.id + '/' + crypto.randomUUID() + '.jpg'
 
     const { error: uploadError } = await supabase.storage
       .from('experience-images')
-      .upload(filePath, coverFile)
+      .upload(filePath, coverFile, {
+        contentType: 'image/jpeg',
+      })
 
     if (uploadError) {
       throw new Error('Image upload failed: ' + uploadError.message)
@@ -162,7 +287,7 @@ useEffect(() => {
       navigate('/dashboard')
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Something went wrong.'
+        err instanceof Error ? err.message : 'Something went wrong.',
       )
     } finally {
       setSaving(false)
@@ -170,7 +295,7 @@ useEffect(() => {
   }
 
   async function handleVisibilityChange(
-    newVisibility: 'private' | 'unlisted' | 'invite_only'
+    newVisibility: 'private' | 'unlisted' | 'invite_only',
   ) {
     if (!id) return
 
@@ -217,7 +342,7 @@ useEffect(() => {
     if (!id) return
 
     const confirmed = window.confirm(
-      'Delete this experience permanently? This will also delete all its photos, songs, timeline entries, and people. This cannot be undone.'
+      'Delete this experience permanently? This will also delete all its photos, songs, timeline entries, and people. This cannot be undone.',
     )
 
     if (!confirmed) return
@@ -283,7 +408,6 @@ useEffect(() => {
       <Navbar />
 
       <main className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
-
         {/* Header */}
         <header className="border-b border-border pb-10">
           <button
@@ -352,7 +476,7 @@ useEffect(() => {
 
         {/* 01 — THE MEMORY */}
         <section className="py-10 sm:py-12">
-         <div className="mb-7">
+          <div className="mb-7">
             <p className="text-xs font-medium tracking-[0.22em] text-accent">
               01
             </p>
@@ -367,7 +491,6 @@ useEffect(() => {
           </div>
 
           <form onSubmit={handleSave}>
-
             {/* Cover */}
             <div>
               <div className="flex items-end justify-between">
@@ -383,7 +506,7 @@ useEffect(() => {
               </div>
 
               <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
-               <div className="aspect-[4/3] w-full sm:aspect-[16/7]">
+               <div className="aspect-square w-full">
                   {coverPreview || coverImageUrl ? (
                     <img
                       src={coverPreview ?? coverImageUrl ?? ''}
@@ -424,7 +547,7 @@ useEffect(() => {
 
             {/* Fields */}
             <div className="mt-7 space-y-6">
-
+              {/* Title */}
               <div>
                 <label
                   htmlFor="title"
@@ -443,6 +566,7 @@ useEffect(() => {
                 />
               </div>
 
+              {/* Location + Date */}
               <div className="grid gap-8 sm:grid-cols-2">
                 <div>
                   <label
@@ -480,6 +604,7 @@ useEffect(() => {
                 </div>
               </div>
 
+              {/* Description */}
               <div>
                 <label
                   htmlFor="description"
@@ -518,8 +643,7 @@ useEffect(() => {
             </p>
           </div>
 
-         <div className="space-y-10">
-
+          <div className="space-y-10">
             {/* Photos */}
             <div>
               <div className="mb-5">
@@ -599,7 +723,6 @@ useEffect(() => {
           </div>
 
           <div className="space-y-3">
-
             {/* Private */}
             <label
               className={`block cursor-pointer border px-5 py-5 transition ${
@@ -709,44 +832,45 @@ useEffect(() => {
             </div>
           ) : null}
 
-         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-  <button
-    type="button"
-    disabled={saving}
-    onClick={(e) => {
-      const form = e.currentTarget
-        .closest('main')
-        ?.querySelector('form')
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={(e) => {
+                const form = e.currentTarget
+                  .closest('main')
+                  ?.querySelector('form')
 
-      if (form) {
-        form.requestSubmit()
-      }
-    }}
-    className="w-full rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:w-auto"
-  >
-    {saving ? 'Saving...' : 'Save changes'}
-  </button>
+                if (form) {
+                  form.requestSubmit()
+                }
+              }}
+              className="w-full rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:w-auto"
+            >
+              {saving ? 'Saving...' : 'Save changes'}
+            </button>
 
-  <button
-    type="button"
-    onClick={handleTogglePublish}
-    disabled={saving}
-    className="w-full rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50 sm:w-auto"
-  >
-    {experience.status === 'published'
-      ? 'Unpublish'
-      : 'Publish'}
-  </button>
+            <button
+              type="button"
+              onClick={handleTogglePublish}
+              disabled={saving}
+              className="w-full rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50 sm:w-auto"
+            >
+              {experience.status === 'published'
+                ? 'Unpublish'
+                : 'Publish'}
+            </button>
 
-  <button
-    type="button"
-    onClick={handleDelete}
-    disabled={saving}
-    className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
-  >
-    Delete experience
-  </button>
-</div>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={saving}
+              className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
+            >
+              Delete experience
+            </button>
+          </div>
+
           <p className="mt-5 text-xs leading-relaxed text-ink-soft">
             Save your changes before leaving this page.
           </p>
@@ -763,6 +887,93 @@ useEffect(() => {
           </p>
         </footer>
       </main>
+
+      {/* Crop modal */}
+      {cropImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl">
+            {/* Modal header */}
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
+                  Cover image
+                </p>
+
+                <h2 className="mt-1 font-serif text-xl font-medium text-ink">
+                  Crop your cover
+                </h2>
+
+                <p className="mt-1 text-xs text-ink-soft">
+                  Drag the image and zoom to choose the part you want.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCancelCrop}
+                className="text-sm text-ink-soft transition hover:text-ink"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Square crop area */}
+            <div className="flex items-center justify-center bg-black p-4 sm:p-8">
+              <div className="relative aspect-square w-full max-w-[520px]">
+                <Cropper
+                  image={cropImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={handleCropComplete}
+                  objectFit="contain"
+                  showGrid
+                />
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="border-t border-border px-5 py-5">
+              <div className="flex items-center gap-4">
+                <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-ink-soft">
+                  Zoom
+                </span>
+
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full accent-[var(--color-accent)]"
+                />
+              </div>
+
+              <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelCrop}
+                  className="w-full rounded-full border border-border px-6 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft sm:w-auto"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleApplyCrop}
+                  disabled={!croppedAreaPixels}
+                  className="w-full rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:w-auto"
+                >
+                  Apply crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
