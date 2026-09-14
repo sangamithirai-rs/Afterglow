@@ -10,13 +10,19 @@ interface PublicExperienceData {
   people: Person[]
 }
 
-export function usePublicExperience(slug: string | undefined) {
+export function usePublicExperience(
+  slug: string | undefined,
+  authLoading: boolean
+) {
   const [data, setData] = useState<PublicExperienceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (authLoading) return
+
     if (!slug) {
+      setData(null)
       setLoading(false)
       setError('This experience could not be found.')
       return
@@ -26,6 +32,9 @@ export function usePublicExperience(slug: string | undefined) {
     let isMounted = true
 
     async function fetchAll() {
+      setLoading(true)
+      setError(null)
+
       const { data: experience, error: experienceError } = await supabase
         .from('experiences')
         .select('*')
@@ -35,17 +44,40 @@ export function usePublicExperience(slug: string | undefined) {
       if (!isMounted) return
 
       if (experienceError || !experience) {
-        setError('This experience could not be found, or is not available to you.')
+        setData(null)
+        setError(
+          'This experience could not be found, or is not available to you.'
+        )
         setLoading(false)
         return
       }
 
-      const [photosRes, songsRes, timelineRes, peopleRes] = await Promise.all([
-        supabase.from('photos').select('*').eq('experience_id', experience.id).order('position'),
-        supabase.from('songs').select('*').eq('experience_id', experience.id).order('position'),
-        supabase.from('timeline_entries').select('*').eq('experience_id', experience.id).order('position'),
-        supabase.from('people').select('*').eq('experience_id', experience.id).order('created_at'),
-      ])
+      const [photosRes, songsRes, timelineRes, peopleRes] =
+        await Promise.all([
+          supabase
+            .from('photos')
+            .select('*')
+            .eq('experience_id', experience.id)
+            .order('position', { ascending: true }),
+
+          supabase
+            .from('songs')
+            .select('*')
+            .eq('experience_id', experience.id)
+            .order('position', { ascending: true }),
+
+          supabase
+            .from('timeline_entries')
+            .select('*')
+            .eq('experience_id', experience.id)
+            .order('position', { ascending: true }),
+
+          supabase
+            .from('people')
+            .select('*')
+            .eq('experience_id', experience.id)
+            .order('created_at', { ascending: true }),
+        ])
 
       if (!isMounted) return
 
@@ -56,6 +88,7 @@ export function usePublicExperience(slug: string | undefined) {
         timelineEntries: timelineRes.data ?? [],
         people: peopleRes.data ?? [],
       })
+
       setLoading(false)
     }
 
@@ -64,7 +97,7 @@ export function usePublicExperience(slug: string | undefined) {
     return () => {
       isMounted = false
     }
-  }, [slug])
+  }, [slug, authLoading])
 
   return { data, loading, error }
 }

@@ -1,10 +1,19 @@
 import { useParams } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { usePublicExperience } from '../hooks/usePublicExperience'
 
 export function PublicExperiencePage() {
   const { slug } = useParams<{ slug: string }>()
-  const { data, loading, error } = usePublicExperience(slug)
 
+  const { user, loading: authLoading } = useAuth()
+
+  console.log('AUTH:', {
+    loading: authLoading,
+    email: user?.email,
+    authenticated: !!user,
+  })
+
+  const { data, loading, error } = usePublicExperience(slug, authLoading)
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg text-ink-soft">
