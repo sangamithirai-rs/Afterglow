@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePublicExperience } from '../hooks/usePublicExperience'
+import { MemoryReplay } from '../components/experience/MemoryReplay'
 
 export function PublicExperiencePage() {
   const { slug } = useParams<{ slug: string }>()
@@ -16,7 +17,7 @@ export function PublicExperiencePage() {
 
   const { data, loading, error } = usePublicExperience(slug, authLoading)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
-
+  const [replayOpen, setReplayOpen] = useState(false)
   useEffect(() => {
     if (selectedPhotoIndex === null || !data?.photos.length) return
 
@@ -103,13 +104,21 @@ export function PublicExperiencePage() {
           {experience.title}
         </h1>
 
-        {experience.description && (
-          <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-white/80 sm:text-xl md:text-2xl">
-            &ldquo;{experience.description}&rdquo;
-          </p>
-        )}
+       {experience.description && (
+  <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-white/80 sm:text-xl md:text-2xl">
+    &ldquo;{experience.description}&rdquo;
+  </p>
+)}
 
-        <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/60">
+<button
+  type="button"
+  onClick={() => setReplayOpen(true)}
+  className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-white/85"
+>
+  Relive this →
+</button>
+
+<div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/60">
           <span>Afterglow</span>
           <span className="h-px w-8 bg-white/30" />
           <span>A memory worth keeping</span>
@@ -344,6 +353,16 @@ export function PublicExperiencePage() {
             {selectedPhotoIndex + 1} / {photos.length}
           </p>
         </div>
+      )}
+      {replayOpen && (
+       <MemoryReplay
+          experience={experience}
+          photos={photos}
+          songs={songs}
+          timelineEntries={timelineEntries}
+          people={people}
+          onClose={() => setReplayOpen(false)}
+        />
       )}
     </div>
   )
