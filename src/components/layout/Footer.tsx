@@ -10,15 +10,21 @@ export function Footer() {
 
         <div>
           Created by{' '}
+          <span className="font-medium text-ink">Sangamithirai RS</span>
+
+          <span className="mx-2">·</span>
+
           <a
             href="https://github.com/sangamithirai-rs"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-ink transition hover:text-accent"
           >
-            sangamithirai-rs (Sangamithirai RS)
+            GitHub
           </a>
+
           <span className="mx-2">·</span>
+
           <a
             href="https://www.linkedin.com/in/sangamithirai-rs/"
             target="_blank"
