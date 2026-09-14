@@ -17,22 +17,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for an existing session on first load (e.g. page refresh)
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
+  let mounted = true
 
-    // Subscribe to future auth changes (login, logout, token refresh)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-      setLoading(false)
-    })
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    if (!mounted) return
 
-    return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
+    setSession(newSession)
+    setLoading(false)
+  })
+
+  supabase.auth.getSession().then(({ data }) => {
+    if (!mounted) return
+
+    setSession(data.session)
+    setLoading(false)
+  })
+
+  return () => {
+    mounted = false
+    subscription.unsubscribe()
+  }
+}, [])
 
  async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
