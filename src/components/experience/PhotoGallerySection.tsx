@@ -18,54 +18,73 @@ export function PhotoGallerySection({
   const [error, setError] = useState<string | null>(null)
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !user) return
+    const files = Array.from(e.target.files ?? [])
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Please upload a JPEG, PNG, or WebP image.')
-      return
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setError('Image must be smaller than 5MB.')
-      return
-    }
+    if (files.length === 0 || !user) return
 
     setError(null)
     setUploading(true)
 
-    const fileExt = file.name.split('.').pop()
-    const filePath = `${user.id}/${experienceId}/${crypto.randomUUID()}.${fileExt}`
+    let uploadedCount = 0
+    let firstError: string | null = null
 
-    const { error: uploadError } = await supabase.storage
-      .from('experience-images')
-      .upload(filePath, file)
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        firstError ??= `"${file.name}" is not a JPEG, PNG, or WebP image.`
+        continue
+      }
 
-    if (uploadError) {
-      setError(uploadError.message)
-      setUploading(false)
-      return
+      if (file.size > MAX_FILE_SIZE) {
+        firstError ??= `"${file.name}" is larger than 5MB.`
+        continue
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase()
+
+      if (!fileExt) {
+        firstError ??= `Could not determine the file type for "${file.name}".`
+        continue
+      }
+
+      const filePath = `${user.id}/${experienceId}/${crypto.randomUUID()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('experience-images')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        firstError ??= `Could not upload "${file.name}".`
+        continue
+      }
+
+      const { data } = supabase.storage
+        .from('experience-images')
+        .getPublicUrl(filePath)
+
+      const { error: insertError } = await supabase.from('photos').insert({
+        experience_id: experienceId,
+        storage_path: data.publicUrl,
+        position: photos.length + uploadedCount,
+      })
+
+      if (insertError) {
+        firstError ??= `Could not save "${file.name}".`
+        continue
+      }
+
+      uploadedCount++
     }
-
-    const { data } = supabase.storage
-      .from('experience-images')
-      .getPublicUrl(filePath)
-
-    const { error: insertError } = await supabase.from('photos').insert({
-      experience_id: experienceId,
-      storage_path: data.publicUrl,
-      position: photos.length,
-    })
 
     setUploading(false)
     e.target.value = ''
 
-    if (insertError) {
-      setError(insertError.message)
-      return
+    if (firstError) {
+      setError(firstError)
     }
 
-    refetch()
+    if (uploadedCount > 0) {
+      await refetch()
+    }
   }
 
   async function handleDelete(photoId: string) {
@@ -86,23 +105,24 @@ export function PhotoGallerySection({
 
   return (
     <div>
-     {/* Photo count */}
-{photos.length > 0 && (
-  <div className="flex justify-end">
-    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-      {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-    </span>
-  </div>
-)}
+      {/* Photo count */}
+      {photos.length > 0 && (
+        <div className="flex justify-end">
+          <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+            {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+          </span>
+        </div>
+      )}
 
       {/* Upload */}
       <div className="mt-6 border-t border-border pt-5">
         <label className="inline-flex cursor-pointer items-center rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft hover:bg-surface">
-          {uploading ? 'Uploading...' : '+ Add photo'}
+          {uploading ? 'Uploading...' : '+ Add photos'}
 
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            multiple
             onChange={handleFileChange}
             disabled={uploading}
             className="sr-only"
@@ -110,7 +130,7 @@ export function PhotoGallerySection({
         </label>
 
         <p className="mt-2 text-xs text-ink-soft">
-          JPEG, PNG or WebP · Max 5MB
+          JPEG, PNG or WebP · Max 5MB each
         </p>
       </div>
 
