@@ -22,12 +22,7 @@ export function Navbar() {
 
           {user && (
             <>
-              <Link
-                to="/dashboard"
-                className="text-sm font-medium text-ink-soft transition hover:text-ink"
-              >
-                My Afterglows
-              </Link>
+              
 
               <button
                 type="button"
@@ -46,12 +41,7 @@ export function Navbar() {
 
           {user && (
             <>
-              <Link
-                to="/dashboard"
-                className="whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium text-ink-soft transition hover:bg-surface hover:text-ink"
-              >
-                My Afterglows
-              </Link>
+             
 
               <button
                 type="button"
