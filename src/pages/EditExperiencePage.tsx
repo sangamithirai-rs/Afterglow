@@ -349,8 +349,8 @@ export function EditExperiencePage() {
         </header>
 
         {/* 01 — THE MEMORY */}
-        <section className="py-14 sm:py-16">
-          <div className="mb-10">
+        <section className="py-10 sm:py-12">
+         <div className="mb-7">
             <p className="text-xs font-medium tracking-[0.22em] text-accent">
               01
             </p>
@@ -421,7 +421,7 @@ export function EditExperiencePage() {
             </div>
 
             {/* Fields */}
-            <div className="mt-10 space-y-8">
+            <div className="mt-7 space-y-6">
 
               <div>
                 <label
@@ -491,7 +491,7 @@ export function EditExperiencePage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What makes this moment worth remembering?"
-                  rows={6}
+                  rows={4}
                   className="mt-3 w-full resize-y border-b border-border bg-transparent px-0 py-3 text-base leading-relaxed text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none"
                 />
               </div>
@@ -500,8 +500,8 @@ export function EditExperiencePage() {
         </section>
 
         {/* 02 — THE MOMENTS */}
-        <section className="border-t border-border py-14 sm:py-16">
-          <div className="mb-10">
+        <section className="border-t border-border py-10 sm:py-12">
+          <div className="mb-7">
             <p className="text-xs font-medium tracking-[0.22em] text-accent">
               02
             </p>
@@ -516,7 +516,7 @@ export function EditExperiencePage() {
             </p>
           </div>
 
-          <div className="space-y-16">
+         <div className="space-y-10">
 
             {/* Photos */}
             <div>
@@ -534,7 +534,7 @@ export function EditExperiencePage() {
             </div>
 
             {/* Songs */}
-            <div className="border-t border-border pt-12">
+            <div className="border-t border-border pt-8">
               <div className="mb-5">
                 <h3 className="font-serif text-2xl text-ink">
                   Songs
@@ -549,7 +549,7 @@ export function EditExperiencePage() {
             </div>
 
             {/* Timeline */}
-            <div className="border-t border-border pt-12">
+            <div className="border-t border-border pt-8">
               <div className="mb-5">
                 <h3 className="font-serif text-2xl text-ink">
                   Timeline
@@ -564,7 +564,7 @@ export function EditExperiencePage() {
             </div>
 
             {/* People */}
-            <div className="border-t border-border pt-12">
+            <div className="border-t border-border pt-8">
               <div className="mb-5">
                 <h3 className="font-serif text-2xl text-ink">
                   People
@@ -700,7 +700,7 @@ export function EditExperiencePage() {
         </section>
 
         {/* ACTIONS */}
-        <section className="border-t border-border py-12">
+        <section className="border-t border-border py-8">
           {error ? (
             <div className="mb-6 border-l-2 border-red-500 px-4 py-2">
               <p className="text-sm text-red-500">{error}</p>

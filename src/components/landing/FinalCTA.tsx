@@ -1,9 +1,43 @@
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+
 export function FinalCTA() {
+  const { user, signInWithGoogle } = useAuth()
+
   return (
-    <section className="px-6 py-24 text-center md:py-32">
-      <h2 className="mx-auto max-w-lg font-serif text-3xl font-medium text-ink md:text-4xl">
-        Some moments deserve more than a camera roll.
-      </h2>
+    <section className="border-t border-border px-6 py-20 text-center md:py-28">
+      <div className="mx-auto max-w-2xl">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+          Keep what matters
+        </p>
+
+        <h2 className="mt-4 font-serif text-3xl font-medium leading-tight text-ink md:text-5xl">
+          Some moments deserve more than a camera roll.
+        </h2>
+
+        <p className="mx-auto mt-5 max-w-lg text-sm leading-relaxed text-ink-soft md:text-base">
+          Give them a place to live, remember, and return to.
+        </p>
+
+        <div className="mt-8">
+          {user ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+            >
+              My Afterglows
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition hover:bg-accent-soft"
+            >
+              Start your Afterglow
+            </button>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

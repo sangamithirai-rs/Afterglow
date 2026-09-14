@@ -11,20 +11,13 @@ export function Navbar() {
         {/* Logo */}
         <Link
           to="/"
-          className="font-serif text-2xl font-medium text-ink"
+          className="shrink-0 font-serif text-2xl font-medium text-ink"
         >
           Afterglow
         </Link>
 
         {/* Desktop navigation */}
         <div className="hidden items-center gap-6 md:flex">
-          <a
-            href="#explore"
-            className="text-sm font-medium text-ink-soft transition hover:text-ink"
-          >
-            Explore
-          </a>
-
           <ThemeToggle />
 
           {user && (
@@ -55,7 +48,7 @@ export function Navbar() {
             <>
               <Link
                 to="/dashboard"
-                className="rounded-full px-3 py-2 text-xs font-medium text-ink-soft transition hover:bg-surface hover:text-ink"
+                className="whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium text-ink-soft transition hover:bg-surface hover:text-ink"
               >
                 My Afterglows
               </Link>
@@ -63,7 +56,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={signOut}
-                className="rounded-full border border-border px-3 py-2 text-xs font-medium text-ink transition hover:border-accent-soft"
+                className="whitespace-nowrap rounded-full border border-border px-3 py-2 text-xs font-medium text-ink transition hover:border-accent-soft"
               >
                 Sign out
               </button>
