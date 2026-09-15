@@ -11,16 +11,15 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024
 function createCroppedImage(
   imageSrc: string,
   crop: Area,
-  outputWidth = 1600,
-  outputHeight = 700,
+  outputSize = 1200,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const image = new Image()
 
     image.onload = () => {
       const canvas = document.createElement('canvas')
-      canvas.width = outputWidth
-      canvas.height = outputHeight
+      canvas.width = outputSize
+      canvas.height = outputSize
 
       const ctx = canvas.getContext('2d')
 
@@ -37,8 +36,8 @@ function createCroppedImage(
         crop.height,
         0,
         0,
-        outputWidth,
-        outputHeight,
+        outputSize,
+        outputSize,
       )
 
       canvas.toBlob(
@@ -116,7 +115,6 @@ export function CreateExperiencePage() {
 
     const imageUrl = URL.createObjectURL(file)
 
-    setCoverFile(file)
     setCropImage(imageUrl)
     setCrop({ x: 0, y: 0 })
     setZoom(1)
@@ -155,6 +153,7 @@ export function CreateExperiencePage() {
       setCoverFile(croppedFile)
       setCoverPreview(newPreviewUrl)
 
+      URL.revokeObjectURL(cropImage)
       setCropImage(null)
       setCrop({ x: 0, y: 0 })
       setZoom(1)
@@ -488,11 +487,11 @@ export function CreateExperiencePage() {
                 image={cropImage}
                 crop={crop}
                 zoom={zoom}
-                aspect={16 / 7}
+                aspect={1}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={handleCropComplete}
-                objectFit="horizontal-cover"
+                objectFit="contain"
                 showGrid
               />
             </div>
