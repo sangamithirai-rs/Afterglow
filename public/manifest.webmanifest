@@ -1,0 +1,17 @@
+{
+  "name": "Afterglow",
+  "short_name": "Afterglow",
+  "description": "Create a memory worth keeping.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f5f1",
+  "theme_color": "#f8f5f1",
+  "icons": [
+    {
+      "src": "/afterglow-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
