@@ -260,12 +260,48 @@ export type Database = {
           },
         ]
       }
+      videos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          experience_id: string
+          id: string
+          position: number
+          storage_path: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          experience_id: string
+          id?: string
+          position?: number
+          storage_path: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          experience_id?: string
+          id?: string
+          position?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_invited_to_experience: { Args: { exp_id: string }; Returns: boolean }
+      owns_experience: { Args: { exp_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

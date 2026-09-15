@@ -10,6 +10,7 @@ import { SongsSection } from '../components/experience/SongsSection'
 import { TimelineSection } from '../components/experience/TimelineSection'
 import { PeopleSection } from '../components/experience/PeopleSection'
 import { InviteSection } from '../components/experience/InviteSection'
+import { VideosSection } from '../components/experience/VideosSection'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -657,6 +658,21 @@ export function EditExperiencePage() {
               </div>
 
               <PhotoGallerySection experienceId={experience.id} />
+            </div>
+
+            {/* Videos */}
+            <div className="border-t border-border pt-8">
+              <div className="mb-5">
+                <h3 className="font-serif text-2xl text-ink">
+                  Videos
+                </h3>
+
+                <p className="mt-1 text-sm text-ink-soft">
+                  Moving moments that bring the memory back to life.
+                </p>
+              </div>
+
+              <VideosSection experienceId={experience.id} />
             </div>
 
             {/* Songs */}
