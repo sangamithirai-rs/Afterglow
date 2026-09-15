@@ -8,22 +8,29 @@ export function Navbar() {
   return (
     <nav className="w-full px-5 py-5 sm:px-6 md:px-12 md:py-6">
       <div className="flex items-center justify-between">
-       {/* Logo */}
+      {/* Logo */}
 <Link
   to="/"
   className="flex shrink-0 items-center gap-2.5"
 >
+  {/* Light theme */}
+  <img
+    src="/afterglow-icon-light.png"
+    alt=""
+    className="h-8 w-8 rounded-lg dark:hidden"
+  />
+
+  {/* Dark theme */}
   <img
     src="/afterglow-icon.png"
     alt=""
-    className="h-8 w-8 rounded-lg"
+    className="hidden h-8 w-8 rounded-lg dark:block"
   />
 
   <span className="font-serif text-2xl font-medium text-ink">
     Afterglow
   </span>
 </Link>
-
         {/* Desktop navigation */}
         <div className="hidden items-center gap-6 md:flex">
           <ThemeToggle />
