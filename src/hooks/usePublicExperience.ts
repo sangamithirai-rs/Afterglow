@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Experience, Photo, Song, TimelineEntry, Person } from '../types'
+import type {
+  Experience,
+  Photo,
+  Song,
+  TimelineEntry,
+  Person,
+  Video,
+} from '../types'
 
 interface PublicExperienceData {
   experience: Experience
@@ -8,6 +15,7 @@ interface PublicExperienceData {
   songs: Song[]
   timelineEntries: TimelineEntry[]
   people: Person[]
+  videos: Video[]
 }
 
 export function usePublicExperience(
@@ -51,32 +59,44 @@ export function usePublicExperience(
         return
       }
 
-      const [photosRes, songsRes, timelineRes, peopleRes] =
-        await Promise.all([
-          supabase
-            .from('photos')
-            .select('*')
-            .eq('experience_id', experience.id)
-            .order('position', { ascending: true }),
+      const [
+        photosRes,
+        songsRes,
+        timelineRes,
+        peopleRes,
+        videosRes,
+      ] = await Promise.all([
+        supabase
+          .from('photos')
+          .select('*')
+          .eq('experience_id', experience.id)
+          .order('position', { ascending: true }),
 
-          supabase
-            .from('songs')
-            .select('*')
-            .eq('experience_id', experience.id)
-            .order('position', { ascending: true }),
+        supabase
+          .from('songs')
+          .select('*')
+          .eq('experience_id', experience.id)
+          .order('position', { ascending: true }),
 
-          supabase
-            .from('timeline_entries')
-            .select('*')
-            .eq('experience_id', experience.id)
-            .order('position', { ascending: true }),
+        supabase
+          .from('timeline_entries')
+          .select('*')
+          .eq('experience_id', experience.id)
+          .order('position', { ascending: true }),
 
-          supabase
-            .from('people')
-            .select('*')
-            .eq('experience_id', experience.id)
-            .order('created_at', { ascending: true }),
-        ])
+        supabase
+          .from('people')
+          .select('*')
+          .eq('experience_id', experience.id)
+          .order('created_at', { ascending: true }),
+
+        supabase
+          .from('videos')
+          .select('*')
+          .eq('experience_id', experience.id)
+          .order('position', { ascending: true })
+          .order('created_at', { ascending: true }),
+      ])
 
       if (!isMounted) return
 
@@ -86,6 +106,7 @@ export function usePublicExperience(
         songs: songsRes.data ?? [],
         timelineEntries: timelineRes.data ?? [],
         people: peopleRes.data ?? [],
+        videos: videosRes.data ?? [],
       })
 
       setLoading(false)

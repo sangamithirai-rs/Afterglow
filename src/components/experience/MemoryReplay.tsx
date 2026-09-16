@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { Experience, Photo, Song, TimelineEntry, Person } from '../../types'
+import type {
+  Experience,
+  Photo,
+  Song,
+  TimelineEntry,
+  Person,
+  Video,
+} from '../../types'
 
 interface MemoryReplayProps {
   experience: Experience
@@ -7,6 +14,8 @@ interface MemoryReplayProps {
   songs: Song[]
   timelineEntries: TimelineEntry[]
   people: Person[]
+  videos: Video[]
+  videoUrls: Record<string, string>
   onClose: () => void
 }
 
@@ -16,6 +25,8 @@ export function MemoryReplay({
   songs,
   timelineEntries,
   people,
+  videos,
+  videoUrls,
   onClose,
 }: MemoryReplayProps) {
   const [step, setStep] = useState(0)
@@ -23,6 +34,7 @@ export function MemoryReplay({
   const totalSteps =
     1 +
     photos.length +
+    videos.length +
     timelineEntries.length +
     (people.length > 0 ? 1 : 0) +
     (songs.length > 0 ? 1 : 0) +
@@ -49,7 +61,8 @@ export function MemoryReplay({
   }, [onClose, totalSteps])
 
   const photoStart = 1
-  const timelineStart = photoStart + photos.length
+  const videoStart = photoStart + photos.length
+  const timelineStart = videoStart + videos.length
   const peopleStep = timelineStart + timelineEntries.length
   const songsStep = peopleStep + (people.length > 0 ? 1 : 0)
 
@@ -83,7 +96,7 @@ export function MemoryReplay({
         </p>
       </div>
     )
-  } else if (step >= photoStart && step < timelineStart) {
+  } else if (step >= photoStart && step < videoStart) {
     const photo = photos[step - photoStart]
 
     content = photo ? (
@@ -97,6 +110,35 @@ export function MemoryReplay({
         {photo.caption && (
           <p className="mt-4 max-w-xl font-serif text-base italic text-white/80 sm:mt-5 sm:text-lg">
             {photo.caption}
+          </p>
+        )}
+      </div>
+    ) : null
+  } else if (step >= videoStart && step < timelineStart) {
+    const video = videos[step - videoStart]
+    const videoUrl = video ? videoUrls[video.id] : undefined
+
+    content = video ? (
+      <div className="flex w-full max-w-5xl flex-col items-center text-center">
+        {videoUrl ? (
+          <video
+            key={video.id}
+            src={videoUrl}
+            controls
+            autoPlay
+            playsInline
+            preload="metadata"
+            className="max-h-[68vh] max-w-full object-contain sm:max-h-[74vh]"
+          />
+        ) : (
+          <div className="flex min-h-48 w-full items-center justify-center text-sm text-white/50">
+            Loading video...
+          </div>
+        )}
+
+        {video.caption && (
+          <p className="mt-4 max-w-xl font-serif text-base italic text-white/80 sm:mt-5 sm:text-lg">
+            {video.caption}
           </p>
         )}
       </div>

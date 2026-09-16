@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePublicExperience } from '../hooks/usePublicExperience'
 import { MemoryReplay } from '../components/experience/MemoryReplay'
+import { supabase } from '../lib/supabase'
+
+const SIGNED_URL_EXPIRY = 60 * 60
 
 export function PublicExperiencePage() {
   const { slug } = useParams<{ slug: string }>()
@@ -15,6 +18,7 @@ export function PublicExperiencePage() {
   )
   const [replayOpen, setReplayOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (selectedPhotoIndex === null || !data?.photos.length) return
@@ -48,6 +52,42 @@ export function PublicExperiencePage() {
     }
   }, [selectedPhotoIndex, data])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadVideoUrls() {
+      if (!data?.videos.length) {
+        setVideoUrls({})
+        return
+      }
+
+      const urls: Record<string, string> = {}
+
+      await Promise.all(
+        data.videos.map(async (video) => {
+          const { data: signedUrlData, error: signedUrlError } =
+            await supabase.storage
+              .from('experience-videos')
+              .createSignedUrl(video.storage_path, SIGNED_URL_EXPIRY)
+
+          if (!signedUrlError && signedUrlData?.signedUrl) {
+            urls[video.id] = signedUrlData.signedUrl
+          }
+        }),
+      )
+
+      if (!cancelled) {
+        setVideoUrls(urls)
+      }
+    }
+
+    loadVideoUrls()
+
+    return () => {
+      cancelled = true
+    }
+  }, [data?.videos])
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg">
@@ -76,7 +116,14 @@ export function PublicExperiencePage() {
     )
   }
 
-  const { experience, photos, songs, timelineEntries, people } = data
+  const {
+    experience,
+    photos,
+    songs,
+    timelineEntries,
+    people,
+    videos,
+  } = data
 
   async function handleShare() {
     const url = window.location.href
@@ -163,7 +210,12 @@ export function PublicExperiencePage() {
               <div className="mt-10 flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-white/50 sm:text-xs">
                 <span>A memory worth keeping</span>
                 <span className="h-px w-8 bg-white/30" />
-                <span>{photos.length} moments</span>
+                <span>
+                  {photos.length + videos.length}{' '}
+                  {photos.length + videos.length === 1
+                    ? 'moment'
+                    : 'moments'}
+                </span>
               </div>
             </div>
           </div>
@@ -252,12 +304,67 @@ export function PublicExperiencePage() {
           </section>
         )}
 
+        {/* Videos */}
+        {videos.length > 0 && (
+          <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+                  02
+                </p>
+
+                <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+                  Moving moments
+                </h2>
+              </div>
+
+              <p className="text-xs uppercase tracking-[0.14em] text-ink-soft">
+                {videos.length}{' '}
+                {videos.length === 1 ? 'video' : 'videos'}
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {videos.map((video) => {
+                const videoUrl = videoUrls[video.id]
+
+                return (
+                  <div
+                    key={video.id}
+                    className="overflow-hidden border border-border bg-black"
+                  >
+                    {videoUrl ? (
+                      <video
+                        src={videoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="block max-h-[75vh] w-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex min-h-40 items-center justify-center px-6 text-center text-sm text-white/70">
+                        Loading video...
+                      </div>
+                    )}
+
+                    {video.caption && (
+                      <p className="border-t border-white/10 px-4 py-3 text-sm text-white/80">
+                        {video.caption}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Timeline */}
         {timelineEntries.length > 0 && (
           <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
             <div className="mb-8">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-                02
+                03
               </p>
 
               <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
@@ -303,7 +410,7 @@ export function PublicExperiencePage() {
           <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
             <div className="mb-8">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-                03
+                04
               </p>
 
               <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
@@ -334,7 +441,7 @@ export function PublicExperiencePage() {
           <section className="mt-16 border-t border-border pt-12 sm:mt-20 sm:pt-16">
             <div className="mb-8">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-                04
+                05
               </p>
 
               <h2 className="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
@@ -472,13 +579,15 @@ export function PublicExperiencePage() {
       {/* Memory Replay */}
       {replayOpen && (
         <MemoryReplay
-          experience={experience}
-          photos={photos}
-          songs={songs}
-          timelineEntries={timelineEntries}
-          people={people}
-          onClose={() => setReplayOpen(false)}
-        />
+  experience={experience}
+  photos={photos}
+  songs={songs}
+  timelineEntries={timelineEntries}
+  people={people}
+  videos={videos}
+  videoUrls={videoUrls}
+  onClose={() => setReplayOpen(false)}
+/>
       )}
     </div>
   )
