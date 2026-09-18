@@ -263,8 +263,7 @@ export function CreateExperiencePage() {
             </h1>
 
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Start with the details that set the scene. You can add photos,
-              songs, people, and a timeline afterwards.
+              Start with the details that set the scene. You can add photos, videos, songs, people, and a timeline afterwards.
             </p>
           </div>
         </header>
