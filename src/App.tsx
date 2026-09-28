@@ -4,6 +4,8 @@ import { DashboardPage } from './pages/DashboardPage'
 import { CreateExperiencePage } from './pages/CreateExperiencePage'
 import { EditExperiencePage } from './pages/EditExperiencePage'
 import { PublicExperiencePage } from './pages/PublicExperiencePage'
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
+import { TermsPage } from './pages/TermsPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { NotFoundPage } from './pages/NotFoundPage'
 
@@ -12,7 +14,13 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
+        <Route path="/terms" element={<TermsPage />} />
+
         <Route path="/not-found" element={<NotFoundPage />} />
+
         <Route
           path="/dashboard"
           element={
@@ -21,6 +29,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/experiences/new"
           element={
@@ -29,6 +38,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/experiences/:id/edit"
           element={
@@ -37,7 +47,12 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/experience/:slug" element={<PublicExperiencePage />} />
+
+        <Route
+          path="/experience/:slug"
+          element={<PublicExperiencePage />}
+        />
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
