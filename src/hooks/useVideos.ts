@@ -7,19 +7,24 @@ type Video = Database['public']['Tables']['videos']['Row']
 export function useVideos(experienceId: string) {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchVideos = useCallback(async () => {
     if (!experienceId) return
 
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('videos')
       .select('*')
       .eq('experience_id', experienceId)
       .order('position', { ascending: true })
       .order('created_at', { ascending: true })
 
-    if (!error && data) {
-      setVideos(data)
+    // On failure keep whatever is already on screen and report the problem.
+    if (fetchError) {
+      setError(fetchError.message)
+    } else {
+      setVideos(data ?? [])
+      setError(null)
     }
 
     setLoading(false)
@@ -35,6 +40,7 @@ export function useVideos(experienceId: string) {
   return {
     videos,
     loading,
+    error,
     refetch: fetchVideos,
   }
 }

@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useSongs } from '../../hooks/useSongs'
+import { LoadError } from './LoadError'
 
 export function SongsSection({ experienceId }: { experienceId: string }) {
-  const { songs, loading, refetch } = useSongs(experienceId)
+  const { songs, loading, error: loadError, refetch } = useSongs(experienceId)
 
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
@@ -58,25 +59,15 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
 
   return (
     <div>
-      {/* Song count */}
-{songs.length > 0 && (
-  <div className="flex justify-end">
-    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-      {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-    </span>
-  </div>
-)}
       {/* Add song */}
-      <form
-        onSubmit={handleAdd}
-        className="mt-6 border-t border-border pt-5"
-      >
+      <form onSubmit={handleAdd}>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Song title"
+            aria-label="Song title"
             className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
 
@@ -85,6 +76,7 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
             placeholder="Artist (optional)"
+            aria-label="Artist"
             className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
 
@@ -105,23 +97,17 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
         </p>
       )}
 
+      {loadError && !loading ? (
+        <LoadError what="songs" onRetry={refetch} />
+      ) : null}
+
       {/* Songs */}
-      {loading ? (
-        <p className="mt-6 text-sm text-ink-soft">
-          Loading songs...
-        </p>
-      ) : songs.length === 0 ? (
-        <div className="mt-6 border-t border-border py-10 text-center">
-          <p className="font-serif text-lg text-ink">
-            No songs yet.
+      {songs.length > 0 ? (
+        <div className="mt-6">
+          <p className="mb-1 text-sm text-ink-soft">
+            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
           </p>
 
-          <p className="mt-1 text-sm text-ink-soft">
-            Add the songs that belong to this memory.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6">
           {songs.map((song, index) => (
             <div
               key={song.id}
@@ -144,14 +130,25 @@ export function SongsSection({ experienceId }: { experienceId: string }) {
               <button
                 type="button"
                 onClick={() => handleDelete(song.id)}
-                className="shrink-0 text-xs font-medium uppercase tracking-[0.12em] text-ink-soft transition hover:text-red-500"
+                aria-label={`Remove ${song.title}`}
+                className="shrink-0 text-sm text-ink-soft transition hover:text-red-500"
               >
                 Remove
               </button>
             </div>
           ))}
         </div>
-      )}
+      ) : loading ? (
+        <p className="mt-6 text-sm text-ink-soft">Loading songs...</p>
+      ) : !loadError ? (
+        <div className="mt-6 border-t border-border py-10 text-center">
+          <p className="font-serif text-lg text-ink">No songs yet.</p>
+
+          <p className="mt-1 text-sm text-ink-soft">
+            Add the songs that belong to this memory.
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

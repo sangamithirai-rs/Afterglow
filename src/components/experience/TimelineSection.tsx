@@ -1,9 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useTimelineEntries } from '../../hooks/useTimelineEntries'
+import { LoadError } from './LoadError'
 
 export function TimelineSection({ experienceId }: { experienceId: string }) {
-  const { entries, loading, refetch } = useTimelineEntries(experienceId)
+  const {
+    entries,
+    loading,
+    error: loadError,
+    refetch,
+  } = useTimelineEntries(experienceId)
 
   const [title, setTitle] = useState('')
   const [entryDate, setEntryDate] = useState('')
@@ -63,27 +69,15 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
 
   return (
     <div>
-      {/* Moment count */}
-{entries.length > 0 && (
-  <div className="flex justify-end">
-    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-      {entries.length}{' '}
-      {entries.length === 1 ? 'moment' : 'moments'}
-    </span>
-  </div>
-)}
-
       {/* Add entry */}
-      <form
-        onSubmit={handleAdd}
-        className="mt-6 border-t border-border pt-5"
-      >
+      <form onSubmit={handleAdd}>
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What happened"
+            aria-label="What happened"
             className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
 
@@ -91,7 +85,8 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
             type="date"
             value={entryDate}
             onChange={(e) => setEntryDate(e.target.value)}
-            className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            aria-label="Date"
+            className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink [color-scheme:light] focus:border-accent focus:outline-none dark:[color-scheme:dark]"
           />
         </div>
 
@@ -99,6 +94,7 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Notes (optional)"
+          aria-label="Notes"
           rows={2}
           className="mt-3 w-full resize-none border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
         />
@@ -119,23 +115,18 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
         </p>
       )}
 
+      {loadError && !loading ? (
+        <LoadError what="the timeline" onRetry={refetch} />
+      ) : null}
+
       {/* Timeline */}
-      {loading ? (
-        <p className="mt-6 text-sm text-ink-soft">
-          Loading timeline...
-        </p>
-      ) : entries.length === 0 ? (
-        <div className="mt-6 border-t border-border py-10 text-center">
-          <p className="font-serif text-lg text-ink">
-            No moments yet.
+      {entries.length > 0 ? (
+        <div className="mt-6">
+          <p className="mb-1 text-sm text-ink-soft">
+            {entries.length}{' '}
+            {entries.length === 1 ? 'moment' : 'moments'}
           </p>
 
-          <p className="mt-1 text-sm text-ink-soft">
-            Add the moments that shaped this experience.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6">
           {entries.map((entry, index) => (
             <div
               key={entry.id}
@@ -166,14 +157,25 @@ export function TimelineSection({ experienceId }: { experienceId: string }) {
               <button
                 type="button"
                 onClick={() => handleDelete(entry.id)}
-                className="w-fit text-xs font-medium uppercase tracking-[0.12em] text-ink-soft transition hover:text-red-500"
+                aria-label={`Remove ${entry.title}`}
+                className="w-fit text-sm text-ink-soft transition hover:text-red-500"
               >
                 Remove
               </button>
             </div>
           ))}
         </div>
-      )}
+      ) : loading ? (
+        <p className="mt-6 text-sm text-ink-soft">Loading timeline...</p>
+      ) : !loadError ? (
+        <div className="mt-6 border-t border-border py-10 text-center">
+          <p className="font-serif text-lg text-ink">No moments yet.</p>
+
+          <p className="mt-1 text-sm text-ink-soft">
+            Add the moments that shaped this experience.
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

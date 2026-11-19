@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useInvites } from '../../hooks/useInvites'
+import { LoadError } from './LoadError'
 
 export function InviteSection({ experienceId }: { experienceId: string }) {
-  const { invites, loading, refetch } = useInvites(experienceId)
+  const { invites, loading, error: loadError, refetch } =
+    useInvites(experienceId)
   const [email, setEmail] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,15 +35,26 @@ export function InviteSection({ experienceId }: { experienceId: string }) {
   }
 
   async function handleRemove(inviteId: string) {
-    await supabase.from('experience_invites').delete().eq('id', inviteId)
+    setError(null)
+
+    const { error: removeError } = await supabase
+      .from('experience_invites')
+      .delete()
+      .eq('id', inviteId)
+
+    if (removeError) {
+      setError('Could not remove invite: ' + removeError.message)
+      return
+    }
+
     refetch()
   }
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-surface p-4">
+    <div className="rounded-lg border border-border bg-surface p-4">
       <p className="text-sm font-medium text-ink">Invited viewers</p>
       <p className="mt-1 text-xs text-ink-soft">
-        Only these people can view this experience — and only if they sign in with this exact email.
+        Only these people can view this experience, and only if they sign in with this exact email.
       </p>
 
       <form onSubmit={handleAdd} className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -50,6 +63,7 @@ export function InviteSection({ experienceId }: { experienceId: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="someone@example.com"
+          aria-label="Email address to invite"
           className="flex-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent-soft focus:outline-none"
         />
         <button
@@ -57,24 +71,35 @@ export function InviteSection({ experienceId }: { experienceId: string }) {
           disabled={saving}
           className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50"
         >
-          Invite
+          {saving ? 'Inviting...' : 'Invite'}
         </button>
       </form>
 
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
 
-      {!loading && invites.length > 0 && (
+      {loadError && !loading ? (
+        <LoadError what="invited viewers" onRetry={refetch} />
+      ) : null}
+
+      {invites.length > 0 ? (
         <ul className="mt-3 space-y-1">
           {invites.map((invite) => (
             <li key={invite.id} className="flex items-center justify-between text-sm text-ink">
               {invite.email}
-              <button type="button" onClick={() => handleRemove(invite.id)} className="text-xs text-ink-soft hover:text-red-500">
+              <button
+                type="button"
+                onClick={() => handleRemove(invite.id)}
+                aria-label={`Remove ${invite.email}`}
+                className="text-xs text-ink-soft hover:text-red-500"
+              >
                 Remove
               </button>
             </li>
           ))}
         </ul>
-      )}
+      ) : !loading && !loadError ? (
+        <p className="mt-3 text-xs text-ink-soft">No one invited yet.</p>
+      ) : null}
     </div>
   )
 }

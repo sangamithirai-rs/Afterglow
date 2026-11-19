@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { usePeople } from '../../hooks/usePeople'
+import { LoadError } from './LoadError'
 
 export function PeopleSection({ experienceId }: { experienceId: string }) {
-  const { people, loading, refetch } = usePeople(experienceId)
+  const { people, loading, error: loadError, refetch } =
+    usePeople(experienceId)
 
   const [name, setName] = useState('')
   const [relationship, setRelationship] = useState('')
@@ -57,26 +59,15 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
 
   return (
     <div>
-      {/* People count */}
-{people.length > 0 && (
-  <div className="flex justify-end">
-    <span className="text-xs uppercase tracking-[0.14em] text-ink-soft">
-      {people.length}{' '}
-      {people.length === 1 ? 'person' : 'people'}
-    </span>
-  </div>
-)}
       {/* Add person */}
-      <form
-        onSubmit={handleAdd}
-        className="mt-6 border-t border-border pt-5"
-      >
+      <form onSubmit={handleAdd}>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name"
+            aria-label="Name"
             className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
 
@@ -85,6 +76,7 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
             value={relationship}
             onChange={(e) => setRelationship(e.target.value)}
             placeholder="Relationship (optional)"
+            aria-label="Relationship"
             className="border-b border-border bg-transparent px-0 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
 
@@ -105,23 +97,17 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
         </p>
       )}
 
+      {loadError && !loading ? (
+        <LoadError what="people" onRetry={refetch} />
+      ) : null}
+
       {/* People */}
-      {loading ? (
-        <p className="mt-6 text-sm text-ink-soft">
-          Loading people...
-        </p>
-      ) : people.length === 0 ? (
-        <div className="mt-6 border-t border-border py-10 text-center">
-          <p className="font-serif text-lg text-ink">
-            No one added yet.
+      {people.length > 0 ? (
+        <div className="mt-6">
+          <p className="mb-1 text-sm text-ink-soft">
+            {people.length} {people.length === 1 ? 'person' : 'people'}
           </p>
 
-          <p className="mt-1 text-sm text-ink-soft">
-            Add the people who were part of this experience.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6">
           {people.map((person, index) => (
             <div
               key={person.id}
@@ -144,14 +130,25 @@ export function PeopleSection({ experienceId }: { experienceId: string }) {
               <button
                 type="button"
                 onClick={() => handleDelete(person.id)}
-                className="shrink-0 text-xs font-medium uppercase tracking-[0.12em] text-ink-soft transition hover:text-red-500"
+                aria-label={`Remove ${person.name}`}
+                className="shrink-0 text-sm text-ink-soft transition hover:text-red-500"
               >
                 Remove
               </button>
             </div>
           ))}
         </div>
-      )}
+      ) : loading ? (
+        <p className="mt-6 text-sm text-ink-soft">Loading people...</p>
+      ) : !loadError ? (
+        <div className="mt-6 border-t border-border py-10 text-center">
+          <p className="font-serif text-lg text-ink">No one added yet.</p>
+
+          <p className="mt-1 text-sm text-ink-soft">
+            Add the people who were part of this experience.
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

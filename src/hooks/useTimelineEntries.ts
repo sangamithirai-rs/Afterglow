@@ -5,27 +5,35 @@ import type { TimelineEntry } from '../types'
 export function useTimelineEntries(experienceId: string | undefined) {
   const [entries, setEntries] = useState<TimelineEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const refetch = useCallback(async () => {
     if (!experienceId) {
       setEntries([])
+      setError(null)
       setLoading(false)
       return
     }
 
     setLoading(true)
 
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('timeline_entries')
       .select('*')
       .eq('experience_id', experienceId)
       .order('position', { ascending: true })
 
-    setEntries(data ?? [])
+    if (fetchError) {
+      setError(fetchError.message)
+    } else {
+      setEntries(data ?? [])
+      setError(null)
+    }
+
     setLoading(false)
   }, [experienceId])
 
-   useEffect(() => {
+  useEffect(() => {
     const load = async () => {
       await refetch()
     }
@@ -33,5 +41,5 @@ export function useTimelineEntries(experienceId: string | undefined) {
     load()
   }, [refetch])
 
-  return { entries, loading, refetch }
+  return { entries, loading, error, refetch }
 }
