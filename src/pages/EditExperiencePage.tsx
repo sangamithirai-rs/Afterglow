@@ -1,4 +1,11 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Cropper, { type Area } from 'react-easy-crop'
 import { Navbar } from '../components/layout/Navbar'
@@ -14,6 +21,48 @@ import { VideosSection } from '../components/experience/VideosSection'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+
+type Visibility = 'private' | 'unlisted' | 'invite_only'
+
+const VISIBILITY_OPTIONS: {
+  value: Visibility
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'private',
+    label: 'Only me',
+    description: 'Only you can view this experience.',
+  },
+  {
+    value: 'unlisted',
+    label: 'Anyone with the link',
+    description:
+      'Anyone who has the link can view it. It will not appear in other users’ dashboards.',
+  },
+  {
+    value: 'invite_only',
+    label: 'Only people I invite',
+    description: 'Only the people you invite by email can view it.',
+  },
+]
+
+/** The last values known to be saved, used to detect unsaved changes. */
+interface Baseline {
+  title: string
+  location: string
+  eventDate: string
+  description: string
+  coverImageUrl: string | null
+}
+
+// Shared styles so every field in the form looks and spaces the same.
+const labelClass = 'block text-sm font-medium text-ink'
+const helpClass = 'mt-1 text-xs leading-relaxed text-ink-soft'
+const inputClass =
+  'mt-2 w-full border-b border-border bg-transparent px-0 py-2.5 text-base text-ink transition placeholder:text-ink-soft/50 focus:border-accent focus:outline-none'
+const secondaryButtonClass =
+  'rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-surface'
 
 function generateSlug() {
   return crypto.randomUUID().split('-')[0]
@@ -73,6 +122,30 @@ function createCroppedImage(
   })
 }
 
+/** A titled block inside the "Moments" section, separated from its siblings. */
+function MomentsBlock({
+  title,
+  description,
+  isFirst = false,
+  children,
+}: {
+  title: string
+  description: string
+  isFirst?: boolean
+  children: ReactNode
+}) {
+  return (
+    <div className={isFirst ? '' : 'border-t border-border pt-10'}>
+      <div className="mb-5">
+        <h3 className="font-serif text-2xl text-ink">{title}</h3>
+        <p className="mt-1 text-sm text-ink-soft">{description}</p>
+      </div>
+
+      {children}
+    </div>
+  )
+}
+
 export function EditExperiencePage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -91,6 +164,7 @@ export function EditExperiencePage() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [baseline, setBaseline] = useState<Baseline | null>(null)
 
   const [cropImage, setCropImage] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -101,10 +175,11 @@ export function EditExperiencePage() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<{ id: number; text: string } | null>(
+    null,
+  )
 
-  const [visibility, setVisibility] = useState<
-    'private' | 'unlisted' | 'invite_only'
-  >('private')
+  const [visibility, setVisibility] = useState<Visibility>('private')
 
   const [linkCopied, setLinkCopied] = useState(false)
 
@@ -112,14 +187,21 @@ export function EditExperiencePage() {
   useEffect(() => {
     if (!experience) return
 
-    setTitle(experience.title)
-    setLocation(experience.location ?? '')
-    setEventDate(experience.event_date ?? '')
-    setDescription(experience.description ?? '')
-    setCoverImageUrl(experience.cover_image_url)
-    setVisibility(
-      experience.visibility as 'private' | 'unlisted' | 'invite_only',
-    )
+    const initial: Baseline = {
+      title: experience.title,
+      location: experience.location ?? '',
+      eventDate: experience.event_date ?? '',
+      description: experience.description ?? '',
+      coverImageUrl: experience.cover_image_url,
+    }
+
+    setTitle(initial.title)
+    setLocation(initial.location)
+    setEventDate(initial.eventDate)
+    setDescription(initial.description)
+    setCoverImageUrl(initial.coverImageUrl)
+    setBaseline(initial)
+    setVisibility(experience.visibility as Visibility)
   }, [experience])
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -131,19 +213,96 @@ export function EditExperiencePage() {
     }
   }, [coverPreview])
 
+  // Success messages fade away on their own.
+  useEffect(() => {
+    if (!notice) return
+
+    const timer = window.setTimeout(() => setNotice(null), 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [notice])
+
+  const isDirty =
+    baseline !== null &&
+    (title !== baseline.title ||
+      location !== baseline.location ||
+      eventDate !== baseline.eventDate ||
+      description !== baseline.description ||
+      coverImageUrl !== baseline.coverImageUrl ||
+      coverFile !== null)
+
+  // Warn before the tab is closed or reloaded with unsaved changes.
+  useEffect(() => {
+    if (!isDirty) return
+
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [isDirty])
+
+  const handleCancelCrop = useCallback(() => {
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage)
+    }
+
+    setCropImage(null)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
+  }, [cropImage])
+
+  // Esc closes the crop dialog.
+  useEffect(() => {
+    if (!cropImage) return
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        handleCancelCrop()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [cropImage, handleCancelCrop])
+
+  function showNotice(text: string) {
+    setNotice({ id: Date.now(), text })
+  }
+
+  function handleBack() {
+    if (
+      isDirty &&
+      !window.confirm('You have unsaved changes. Leave without saving?')
+    ) {
+      return
+    }
+
+    navigate('/dashboard')
+  }
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
 
     if (!file) return
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Please upload a JPEG, PNG, or WebP image.')
+      setError('Upload a JPEG, PNG or WebP image.')
       e.target.value = ''
       return
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError('Image must be smaller than 5MB.')
+      setError('Choose an image smaller than 5MB.')
       e.target.value = ''
       return
     }
@@ -197,19 +356,14 @@ export function EditExperiencePage() {
       setZoom(1)
       setCroppedAreaPixels(null)
     } catch {
-      setError('Could not crop the image. Please try again.')
+      setError('Could not crop the image. Try again.')
     }
   }
 
-  function handleCancelCrop() {
-    if (cropImage) {
-      URL.revokeObjectURL(cropImage)
-    }
-
-    setCropImage(null)
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
-    setCroppedAreaPixels(null)
+  function handleRemoveCover() {
+    setCoverFile(null)
+    setCoverPreview(null)
+    setCoverImageUrl(null)
   }
 
   async function uploadNewCoverIfNeeded() {
@@ -249,22 +403,23 @@ export function EditExperiencePage() {
         setLinkCopied(false)
       }, 2000)
     } catch {
-      setError('Could not copy the link. Please copy it manually.')
+      setError('Could not copy the link. Copy it manually instead.')
     }
   }
 
-  async function handleSave(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
+  /** Validates and saves the details form. Returns true when saved. */
+  async function persistDetails(): Promise<boolean> {
+    if (!id) return false
 
-    if (!title.trim()) {
-      setError('Give your experience a title.')
-      return
+    const cleanTitle = title.trim()
+
+    if (!cleanTitle) {
+      setError('Give your experience a title before saving.')
+      return false
     }
 
-    if (!id) return
-
-    setSaving(true)
+    const cleanLocation = location.trim()
+    const cleanDescription = description.trim()
 
     try {
       const finalCoverUrl = await uploadNewCoverIfNeeded()
@@ -272,10 +427,10 @@ export function EditExperiencePage() {
       const { error: updateError } = await supabase
         .from('experiences')
         .update({
-          title: title.trim(),
-          location: location.trim() || null,
+          title: cleanTitle,
+          location: cleanLocation || null,
           event_date: eventDate || null,
-          description: description.trim() || null,
+          description: cleanDescription || null,
           cover_image_url: finalCoverUrl,
           visibility,
         })
@@ -285,21 +440,52 @@ export function EditExperiencePage() {
         throw new Error(updateError.message)
       }
 
-      navigate('/dashboard')
+      setTitle(cleanTitle)
+      setLocation(cleanLocation)
+      setDescription(cleanDescription)
+      setCoverImageUrl(finalCoverUrl)
+      setCoverFile(null)
+      setCoverPreview(null)
+      setBaseline({
+        title: cleanTitle,
+        location: cleanLocation,
+        eventDate,
+        description: cleanDescription,
+        coverImageUrl: finalCoverUrl,
+      })
+
+      return true
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Something went wrong.',
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Try again.',
       )
-    } finally {
-      setSaving(false)
+
+      return false
     }
   }
 
-  async function handleVisibilityChange(
-    newVisibility: 'private' | 'unlisted' | 'invite_only',
-  ) {
+  async function handleSave(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const saved = await persistDetails()
+
+    setSaving(false)
+
+    if (saved) {
+      showNotice('Changes saved')
+    }
+  }
+
+  async function handleVisibilityChange(newVisibility: Visibility) {
     if (!id) return
 
+    const previousVisibility = visibility
+
+    setError(null)
     setVisibility(newVisibility)
 
     const { error: visibilityError } = await supabase
@@ -308,8 +494,12 @@ export function EditExperiencePage() {
       .eq('id', id)
 
     if (visibilityError) {
+      setVisibility(previousVisibility)
       setError(visibilityError.message)
+      return
     }
+
+    showNotice('Sharing updated')
   }
 
   async function handleTogglePublish() {
@@ -317,6 +507,16 @@ export function EditExperiencePage() {
 
     setError(null)
     setSaving(true)
+
+    // Don't lose edits: save any pending changes before changing status.
+    if (isDirty) {
+      const saved = await persistDetails()
+
+      if (!saved) {
+        setSaving(false)
+        return
+      }
+    }
 
     const willPublish = experience.status !== 'published'
     const slug = experience.share_slug ?? generateSlug()
@@ -343,11 +543,12 @@ export function EditExperiencePage() {
     if (!id) return
 
     const confirmed = window.confirm(
-      'Delete this experience permanently? This will also delete all its photos, songs, timeline entries, and people. This cannot be undone.',
+      'Delete this experience permanently? This also deletes its photos, videos, songs, timeline entries and people. This cannot be undone.',
     )
 
     if (!confirmed) return
 
+    setError(null)
     setSaving(true)
 
     const { error: deleteError } = await supabase
@@ -404,51 +605,53 @@ export function EditExperiencePage() {
     '/experience/' +
     experience.share_slug
 
+  const hasCover = Boolean(coverPreview || coverImageUrl)
+  const isPublished = experience.status === 'published'
+
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
 
-      <main className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
+      <main className="mx-auto max-w-4xl px-6 pb-36 pt-8 sm:pt-12">
         {/* Header */}
-        <header className="border-b border-border pb-10">
+        <header className="pb-10">
           <button
             type="button"
-            onClick={() => navigate('/dashboard')}
-            className="text-xs font-medium uppercase tracking-[0.18em] text-ink-soft transition hover:text-ink"
+            onClick={handleBack}
+            className="text-sm text-ink-soft transition hover:text-ink"
           >
-            ← Back to memories
+            ← Back to dashboard
           </button>
 
-          <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.22em] text-accent">
-                Afterglow
-              </p>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm text-accent">Editing</p>
 
-              <h1 className="mt-3 font-serif text-4xl font-medium leading-tight text-ink sm:text-5xl">
-                Edit experience
+              <h1 className="mt-2 break-words font-serif text-4xl font-medium leading-tight text-ink sm:text-5xl">
+                {title.trim() || 'Untitled memory'}
               </h1>
-
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-                Shape the details and keep the moments that matter.
-              </p>
             </div>
 
-            <span className="w-fit rounded-full bg-ink-soft/10 px-3 py-1.5 text-xs font-medium capitalize text-ink-soft">
+            <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs font-medium capitalize text-ink-soft">
+              <span
+                aria-hidden="true"
+                className={`h-1.5 w-1.5 rounded-full ${
+                  isPublished ? 'bg-accent' : 'bg-ink-soft/40'
+                }`}
+              />
               {experience.status}
             </span>
           </div>
 
-          {/* Existing share controls */}
-          {experience.status === 'published' &&
-          experience.share_slug ? (
-            <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          {/* Share link (published only) */}
+          {isPublished && experience.share_slug ? (
+            <div className="mt-8 flex flex-col gap-3 rounded-xl border border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.16em] text-ink-soft">
-                  Published experience
+                <p className="text-xs text-ink-soft">
+                  Public link
                 </p>
 
-                <p className="mt-1 truncate text-sm text-ink">
+                <p className="mt-0.5 truncate text-sm text-ink">
                   {publicUrl}
                 </p>
               </div>
@@ -457,7 +660,7 @@ export function EditExperiencePage() {
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-surface"
+                  className={secondaryButtonClass}
                 >
                   {linkCopied ? '✓ Copied' : 'Copy link'}
                 </button>
@@ -466,371 +669,278 @@ export function EditExperiencePage() {
                   href={publicUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-surface"
+                  className={secondaryButtonClass}
                 >
                   Open
                 </a>
               </div>
             </div>
           ) : null}
+
+          {/* Jump links: this is a long page */}
+          <nav
+            aria-label="Sections"
+            className="mt-8 flex gap-6 border-b border-border text-sm"
+          >
+            {[
+              ['#details', 'Details'],
+              ['#moments', 'Moments'],
+              ['#sharing', 'Sharing'],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="-mb-px border-b-2 border-transparent pb-3 text-ink-soft transition hover:border-accent hover:text-ink"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
         </header>
 
-        {/* 01 — THE MEMORY */}
-        <section className="py-10 sm:py-12">
-          <div className="mb-7">
-            <p className="text-xs font-medium tracking-[0.22em] text-accent">
-              01
-            </p>
-
-            <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
-              The memory
+        {/* Details */}
+        <section id="details" className="scroll-mt-6 pb-14">
+          <div className="mb-8">
+            <h2 className="font-serif text-3xl font-medium text-ink">
+              Details
             </h2>
 
             <p className="mt-2 text-sm text-ink-soft">
-              Start with the details that set the scene.
+              The name, place and date that set the scene.
             </p>
           </div>
 
-          <form onSubmit={handleSave}>
+          <form
+            id="experience-form"
+            onSubmit={handleSave}
+            className="space-y-10"
+          >
             {/* Cover */}
-            <div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <label className="text-sm font-medium text-ink">
-                    Cover image
-                  </label>
-
-                  <p className="mt-1 text-xs text-ink-soft">
-                    This becomes the visual introduction to your memory.
-                  </p>
-                </div>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
+              <div className="h-40 w-40 shrink-0 overflow-hidden rounded-2xl border border-border bg-surface">
+                {hasCover ? (
+                  <img
+                    src={coverPreview ?? coverImageUrl ?? ''}
+                    alt="Cover preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-4 text-center text-xs text-ink-soft">
+                    No cover yet
+                  </div>
+                )}
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
-               <div className="aspect-square w-full">
-                  {coverPreview || coverImageUrl ? (
-                    <img
-                      src={coverPreview ?? coverImageUrl ?? ''}
-                      alt="Cover preview"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-surface">
-                      <p className="text-sm text-ink-soft">
-                        No cover image
-                      </p>
-                    </div>
-                  )}
-                </div>
+              <div className="min-w-0">
+                <p className={labelClass}>Cover image</p>
 
-                <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-ink-soft">
-                    JPG, PNG or WebP · Max 5MB
-                  </p>
+                <p className={helpClass}>
+                  The first image people see when they open your memory.
+                  JPEG, PNG or WebP, up to 5MB.
+                </p>
 
-                  <input
-                    id="cover-image"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleFileChange}
-                    className="sr-only"
-                  />
-
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   <label
-                    htmlFor="cover-image"
-                    className="cursor-pointer rounded-full border border-border px-4 py-2 text-xs font-medium text-ink transition hover:border-accent-soft hover:bg-bg"
+                    className={`${secondaryButtonClass} cursor-pointer focus-within:ring-2 focus-within:ring-accent`}
                   >
-                    Change cover
+                    {hasCover ? 'Change cover' : 'Upload cover'}
+
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleFileChange}
+                      className="sr-only"
+                    />
                   </label>
+
+                  {hasCover ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveCover}
+                      className="rounded-full px-3 py-2 text-xs font-medium text-ink-soft transition hover:text-red-500"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
 
-            {/* Fields */}
-            <div className="mt-7 space-y-6">
-              {/* Title */}
+            {/* Title */}
+            <div>
+              <label htmlFor="title" className={labelClass}>
+                Title
+              </label>
+
+              <input
+                id="title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Give this memory a name"
+                className={`${inputClass} font-serif text-2xl sm:text-3xl`}
+              />
+            </div>
+
+            {/* Location + Date */}
+            <div className="grid gap-10 sm:grid-cols-2 sm:gap-8">
               <div>
-                <label
-                  htmlFor="title"
-                  className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
-                >
-                  Title
+                <label htmlFor="location" className={labelClass}>
+                  Location
                 </label>
 
                 <input
-                  id="title"
+                  id="location"
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Give this memory a name"
-                  className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-2xl font-serif text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none sm:text-3xl"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Where did it happen?"
+                  className={inputClass}
                 />
               </div>
 
-              {/* Location + Date */}
-              <div className="grid gap-8 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
-                  >
-                    Location
-                  </label>
-
-                  <input
-                    id="location"
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Where did it happen?"
-                    className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-base text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="eventDate"
-                    className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
-                  >
-                    Date
-                  </label>
-
-                  <input
-                    id="eventDate"
-                    type="date"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    className="mt-3 w-full border-b border-border bg-transparent px-0 py-3 text-base text-ink focus:border-accent focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
               <div>
-                <label
-                  htmlFor="description"
-                  className="block text-xs font-medium uppercase tracking-[0.16em] text-ink-soft"
-                >
-                  Description
+                <label htmlFor="eventDate" className={labelClass}>
+                  Date
                 </label>
 
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What makes this moment worth remembering?"
-                  rows={4}
-                  className="mt-3 w-full resize-y border-b border-border bg-transparent px-0 py-3 text-base leading-relaxed text-ink placeholder:text-ink-soft/40 focus:border-accent focus:outline-none"
+                <input
+                  id="eventDate"
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark]`}
                 />
               </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className={labelClass}>
+                Description
+              </label>
+
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What makes this moment worth remembering?"
+                rows={4}
+                className={`${inputClass} resize-y leading-relaxed`}
+              />
             </div>
           </form>
         </section>
 
-        {/* 02 — THE MOMENTS */}
-        <section className="border-t border-border py-10 sm:py-12">
-          <div className="mb-7">
-            <p className="text-xs font-medium tracking-[0.22em] text-accent">
-              02
-            </p>
-
-            <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
-              The moments
+        {/* Moments */}
+        <section
+          id="moments"
+          className="scroll-mt-6 border-t border-border py-14"
+        >
+          <div className="mb-10">
+            <h2 className="font-serif text-3xl font-medium text-ink">
+              Moments
             </h2>
 
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Build the story with the photos, sounds, people, and moments
-              that belong to it.
+              Add the photos, videos, songs, people and events that belong
+              to this memory. These save as you add them.
             </p>
           </div>
 
           <div className="space-y-10">
-            {/* Photos */}
-            <div>
-              <div className="mb-5">
-                <h3 className="font-serif text-2xl text-ink">
-                  Photos
-                </h3>
-
-                <p className="mt-1 text-sm text-ink-soft">
-                  A collection of moments captured along the way.
-                </p>
-              </div>
-
+            <MomentsBlock
+              isFirst
+              title="Photos"
+              description="A collection of moments captured along the way."
+            >
               <PhotoGallerySection experienceId={experience.id} />
-            </div>
+            </MomentsBlock>
 
-            {/* Videos */}
-            <div className="border-t border-border pt-8">
-              <div className="mb-5">
-                <h3 className="font-serif text-2xl text-ink">
-                  Videos
-                </h3>
-
-                <p className="mt-1 text-sm text-ink-soft">
-                  Moving moments that bring the memory back to life.
-                </p>
-              </div>
-
+            <MomentsBlock
+              title="Videos"
+              description="Moving moments that bring the memory back to life."
+            >
               <VideosSection experienceId={experience.id} />
-            </div>
+            </MomentsBlock>
 
-            {/* Songs */}
-            <div className="border-t border-border pt-8">
-              <div className="mb-5">
-                <h3 className="font-serif text-2xl text-ink">
-                  Songs
-                </h3>
-
-                <p className="mt-1 text-sm text-ink-soft">
-                  The soundtrack of the memory.
-                </p>
-              </div>
-
+            <MomentsBlock
+              title="Songs"
+              description="The soundtrack of the memory."
+            >
               <SongsSection experienceId={experience.id} />
-            </div>
+            </MomentsBlock>
 
-            {/* Timeline */}
-            <div className="border-t border-border pt-8">
-              <div className="mb-5">
-                <h3 className="font-serif text-2xl text-ink">
-                  Timeline
-                </h3>
-
-                <p className="mt-1 text-sm text-ink-soft">
-                  How the day or trip unfolded.
-                </p>
-              </div>
-
+            <MomentsBlock
+              title="Timeline"
+              description="How the day or trip unfolded."
+            >
               <TimelineSection experienceId={experience.id} />
-            </div>
+            </MomentsBlock>
 
-            {/* People */}
-            <div className="border-t border-border pt-8">
-              <div className="mb-5">
-                <h3 className="font-serif text-2xl text-ink">
-                  People
-                </h3>
-
-                <p className="mt-1 text-sm text-ink-soft">
-                  The people who were there.
-                </p>
-              </div>
-
+            <MomentsBlock
+              title="People"
+              description="The people who were there."
+            >
               <PeopleSection experienceId={experience.id} />
-            </div>
+            </MomentsBlock>
           </div>
         </section>
 
-        {/* 03 — SHARING */}
-        <section className="border-t border-border py-14 sm:py-16">
-          <div className="mb-10">
-            <p className="text-xs font-medium tracking-[0.22em] text-accent">
-              03
-            </p>
-
-            <h2 className="mt-2 font-serif text-3xl font-medium text-ink">
+        {/* Sharing */}
+        <section
+          id="sharing"
+          className="scroll-mt-6 border-t border-border py-14"
+        >
+          <div className="mb-8">
+            <h2 className="font-serif text-3xl font-medium text-ink">
               Sharing
             </h2>
 
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Decide who can relive this memory once it is published.
+              Choose who can view this memory once it is published. This
+              saves as soon as you pick an option.
             </p>
           </div>
 
-          <div className="space-y-3">
-            {/* Private */}
-            <label
-              className={`block cursor-pointer border px-5 py-5 transition ${
-                visibility === 'private'
-                  ? 'border-accent bg-surface'
-                  : 'border-border hover:border-accent-soft'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === 'private'}
-                  onChange={() => handleVisibilityChange('private')}
-                  className="mt-1"
-                />
+          <div
+            role="radiogroup"
+            aria-label="Who can view this experience"
+            className="space-y-3"
+          >
+            {VISIBILITY_OPTIONS.map((option) => {
+              const selected = visibility === option.value
 
-                <div>
-                  <p className="text-sm font-medium text-ink">
-                    Only me
-                  </p>
+              return (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-start gap-4 rounded-xl border px-5 py-4 transition focus-within:ring-2 focus-within:ring-accent ${
+                    selected
+                      ? 'border-accent bg-surface'
+                      : 'border-border hover:border-accent-soft'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value={option.value}
+                    checked={selected}
+                    onChange={() => handleVisibilityChange(option.value)}
+                    className="mt-1 accent-accent"
+                  />
 
-                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                    Only you can view this experience.
-                  </p>
-                </div>
-              </div>
-            </label>
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      {option.label}
+                    </p>
 
-            {/* Unlisted */}
-            <label
-              className={`block cursor-pointer border px-5 py-5 transition ${
-                visibility === 'unlisted'
-                  ? 'border-accent bg-surface'
-                  : 'border-border hover:border-accent-soft'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="unlisted"
-                  checked={visibility === 'unlisted'}
-                  onChange={() => handleVisibilityChange('unlisted')}
-                  className="mt-1"
-                />
-
-                <div>
-                  <p className="text-sm font-medium text-ink">
-                    Anyone with the link
-                  </p>
-
-                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                    Anyone who has the link can view it. It will not appear
-                    in other users’ dashboards.
-                  </p>
-                </div>
-              </div>
-            </label>
-
-            {/* Invite only */}
-            <label
-              className={`block cursor-pointer border px-5 py-5 transition ${
-                visibility === 'invite_only'
-                  ? 'border-accent bg-surface'
-                  : 'border-border hover:border-accent-soft'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="invite_only"
-                  checked={visibility === 'invite_only'}
-                  onChange={() =>
-                    handleVisibilityChange('invite_only')
-                  }
-                  className="mt-1"
-                />
-
-                <div>
-                  <p className="text-sm font-medium text-ink">
-                    Only people I invite
-                  </p>
-
-                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                    Only invited people can view this experience.
-                  </p>
-                </div>
-              </div>
-            </label>
+                    <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                      {option.description}
+                    </p>
+                  </div>
+                </label>
+              )
+            })}
           </div>
 
           {visibility === 'invite_only' ? (
@@ -840,82 +950,93 @@ export function EditExperiencePage() {
           ) : null}
         </section>
 
-        {/* ACTIONS */}
-        <section className="border-t border-border py-8">
-          {error ? (
-            <div className="mb-6 border-l-2 border-red-500 px-4 py-2">
-              <p className="text-sm text-red-500">{error}</p>
-            </div>
-          ) : null}
+        {/* Delete */}
+        <section
+          id="delete"
+          className="scroll-mt-6 border-t border-border py-14"
+        >
+          <h2 className="font-serif text-3xl font-medium text-ink">
+            Delete this experience
+          </h2>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={(e) => {
-                const form = e.currentTarget
-                  .closest('main')
-                  ?.querySelector('form')
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+            This permanently removes the experience along with its photos,
+            videos, songs, timeline entries and people. It can't be undone.
+          </p>
 
-                if (form) {
-                  form.requestSubmit()
-                }
-              }}
-              className="w-full rounded-full bg-accent px-7 py-3 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:w-auto"
-            >
-              {saving ? 'Saving...' : 'Save changes'}
-            </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving}
+            className="mt-6 rounded-full border border-red-500/40 px-5 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"
+          >
+            Delete experience
+          </button>
+        </section>
+      </main>
 
+      {/* Action bar: always visible, so saving never means scrolling to the bottom */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p
+            role="status"
+            aria-live="polite"
+            className={`flex min-w-0 items-center gap-2 text-sm ${
+              error ? 'text-red-500' : 'text-ink-soft'
+            }`}
+          >
+            {error ? (
+              error
+            ) : notice ? (
+              <>✓ {notice.text}</>
+            ) : isDirty ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full bg-accent"
+                />
+                Unsaved changes
+              </>
+            ) : (
+              'No unsaved changes'
+            )}
+          </p>
+
+          <div className="flex shrink-0 gap-2">
             <button
               type="button"
               onClick={handleTogglePublish}
               disabled={saving}
-              className="w-full rounded-full border border-border px-7 py-3 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50 sm:w-auto"
+              className="flex-1 rounded-full border border-border px-6 py-2.5 text-sm font-medium text-ink transition hover:border-accent-soft disabled:opacity-50 sm:flex-none"
             >
-              {experience.status === 'published'
-                ? 'Unpublish'
-                : 'Publish'}
+              {isPublished ? 'Unpublish' : 'Publish'}
             </button>
 
             <button
-              type="button"
-              onClick={handleDelete}
-              disabled={saving}
-              className="text-sm font-medium text-red-500 transition hover:text-red-600 sm:ml-auto"
+              type="submit"
+              form="experience-form"
+              disabled={saving || !isDirty}
+              className="flex-1 rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition hover:bg-accent-soft disabled:opacity-50 sm:flex-none"
             >
-              Delete experience
+              {saving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
+        </div>
+      </div>
 
-          <p className="mt-5 text-xs leading-relaxed text-ink-soft">
-            Save your changes before leaving this page.
-          </p>
-        </section>
-
-        {/* Closing */}
-        <footer className="border-t border-border py-12 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">
-            Afterglow
-          </p>
-
-          <p className="mt-3 font-serif text-xl italic text-ink-soft">
-            A memory worth keeping.
-          </p>
-        </footer>
-      </main>
-
-      {/* Crop modal */}
+      {/* Crop dialog */}
       {cropImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Crop your cover"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+        >
+          <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-y-auto rounded-2xl bg-surface shadow-2xl">
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
-                  Cover image
-                </p>
-
-                <h2 className="mt-1 font-serif text-xl font-medium text-ink">
+                <h2 className="font-serif text-xl font-medium text-ink">
                   Crop your cover
                 </h2>
 
@@ -953,11 +1074,15 @@ export function EditExperiencePage() {
             {/* Controls */}
             <div className="border-t border-border px-5 py-5">
               <div className="flex items-center gap-4">
-                <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-ink-soft">
+                <label
+                  htmlFor="crop-zoom"
+                  className="shrink-0 text-sm text-ink-soft"
+                >
                   Zoom
-                </span>
+                </label>
 
                 <input
+                  id="crop-zoom"
                   type="range"
                   min={1}
                   max={3}
