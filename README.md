@@ -1,75 +1,71 @@
-# React + TypeScript + Vite
+# Afterglow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Turn a moment into a memory worth keeping. Afterglow lets you gather the photos, videos, songs, people and timeline of an experience into one page, then share it with a single link or relive it as a full-screen replay.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Google sign-in** via Supabase Auth
+- **Experiences** with a cover image, date, location and description
+- **Photos and videos** stored in Supabase Storage, with captions
+- **Songs, people and a timeline** to tell the story around the media
+- **Visibility controls**: `private`, `unlisted` (anyone with the link) or `invite_only` (specific emails)
+- **Public viewer** with a photo lightbox (keyboard navigation) and a "Relive this" memory replay
+- **Light and dark themes**, installable as a PWA
 
-## React Compiler
+## Tech stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7 and Supabase (Postgres, Auth, Storage). Deployed on Vercel.
 
-## Expanding the ESLint configuration
+## Getting started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Requirements: Node.js 20+ and a Supabase project.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+cp .env.example .env.local   # then fill in your Supabase URL and anon key
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+### Environment variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Variable                 | Description                                            |
+| ------------------------ | ------------------------------------------------------ |
+| `VITE_SUPABASE_URL`      | Your Supabase project URL                              |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon (public) key                        |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Supabase setup
+
+1. Create a project and enable the **Google** provider under Authentication.
+2. Add `http://localhost:5173/dashboard` (and your production URL) to the allowed redirect URLs.
+3. Create two Storage buckets named `experience-images` and `experience-videos`. The migrations add policies for them but do not create the buckets themselves.
+4. Apply the SQL files in `supabase/migrations/` in order. They create the schema, row-level security policies, storage policies, and the visibility and invite tables. (There is no `0005` file; the numbering skips from `0004` to `0006`.)
+
+## Scripts
+
+| Command           | What it does                      |
+| ----------------- | --------------------------------- |
+| `npm run dev`     | Start the dev server              |
+| `npm run build`   | Type-check and build for production |
+| `npm run preview` | Preview the production build      |
+| `npm run lint`    | Run ESLint                        |
+
+## Project structure
 
 ```
+src/
+  components/
+    experience/   editor sections, cards and the memory replay
+    landing/      landing page sections
+    layout/       navbar, footer, theme toggle, protected route
+  contexts/       auth and theme providers
+  hooks/          Supabase data hooks (one per table)
+  lib/            Supabase client
+  pages/          route-level pages (lazy-loaded except the landing page)
+  types/          generated database types and app type aliases
+supabase/
+  migrations/     SQL schema, RLS and storage policies
+```
+
+## Deployment
+
+The app is a static SPA. `vercel.json` rewrites every path to `index.html` so client-side routes work on refresh. Set the two `VITE_SUPABASE_*` variables in your Vercel project settings.

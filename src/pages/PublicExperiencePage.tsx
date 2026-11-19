@@ -511,6 +511,9 @@ export function PublicExperiencePage() {
       {/* Fullscreen Photo Viewer */}
       {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo viewer"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
           onClick={() => setSelectedPhotoIndex(null)}
         >
